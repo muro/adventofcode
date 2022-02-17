@@ -835,8 +835,6 @@ def flip(nr):
   for i in range(10):
     if nr & b:
       res |= rb
-#    if nr == 255:
-#      print("i:", i, "b:", b, "rb:", rb, "nr:", nr, "res:", res)
     b <<= 1
     rb >>= 1
   return res
@@ -851,13 +849,9 @@ class FlipTest(unittest.TestCase):
     self.assertEqual(1020, flip(255))
 
 
-def tiles(data):
-  # return id : [4 edges] - each edge is a number represented as binary
-  tls = {}
-  bin_complement = 2 ** len(data.splitlines()[1])
-  print("bin complement: ", bin_complement)
-  for tile in data.split('\n\n'):
-    tile_id = int(re.match('Tile (\d+):', tile.splitlines()[0]).group(1))
+class Tile(object):
+  def __init__(self, tile):
+    self.tile_id = int(re.match('Tile (\d+):', tile.splitlines()[0]).group(1))
     binTile = tile.replace('#', '1').replace('.', '0')
     a = int(binTile.splitlines()[1], 2)
     b = int(''.join(bt[0] for bt in binTile.splitlines()[1:]), 2)
@@ -865,12 +859,15 @@ def tiles(data):
     d = int(''.join(bt[-1] for bt in binTile.splitlines()[1:]), 2)
 
     # This list includes is *all* possible values - when arranging tiles, note that flip only changes 2 opposite edges
-    tls[tile_id] = (a, b, c, d, flip(a), flip(b), flip(c), flip(d))
-  ids = [i for _, v in tls.items() for i in list(v)]
-  c = collections.Counter(ids)
-  print('tiles:', len(tls), 'all ids:', len(ids), 'unique ids:', len(set(ids)))
-  print('counted:', c.most_common(10))
-  print('unique:', len([count for _, count in c.items() if count <= 1]))
+    self.edges = (a, b, c, d, flip(a), flip(b), flip(c), flip(d))
+    self.tile = tile.splitlines()[1:]
+
+def tiles(data):
+  # return id : [4 edges, 4 flipped edges] - each edge is a number represented as binary
+  tls = {}
+  for tile in data.split('\n\n'):
+    tile_id = int(re.match('Tile (\d+):', tile.splitlines()[0]).group(1))
+    tls[tile_id] = Tile(tile)
   return tls
 
 def arrangeAndMulCorners(data):
@@ -878,22 +875,35 @@ def arrangeAndMulCorners(data):
 
 def findCorners(data):
   # returns tile ids for the 4 corners
-  ids = [i for _, v in data.items() for i in list(v)]
+  ids = [i for _, t in data.items() for i in list(t.edges)]
   c = collections.Counter(ids)
   tile_connections = {}
   for tid in data:
     tile_connections[tid] = 0
-    for i in list(data[tid]):
+    for i in list(data[tid].edges):
       if c[i] > 1:
         tile_connections[tid] += 1
   cs = collections.Counter(tile_connections)
   return [k for k, _ in cs.most_common()[:-5:-1]]
 
+def createMap(data):
+  corners = findCorners(data)
+  # fix one corner, then build the map from it:
+  topLeft = corners[0]
+  # 144 tiles, so most likely 12x12 map, just in case 144x144
+  # need to store the orientation of the tile as well
+
+  # find correct orientation for topLeft:
+  # orientation is stored as
+  if data[topLeft][0] in data and data[topLeft][1] in data:
+    # top and left row in map, thus orientation is:
+    []
+
 def numMonsters(data):
   # create inverse map: edge id --> tile
   edge_to_tile = {}
-  for k, v in data.items():
-    for i in list(v):
+  for k, t in data.items():
+    for i in list(t.edges):
       if i not in edge_to_tile:
         edge_to_tile[i] = []
       edge_to_tile[i].append(k)
@@ -1028,3 +1038,5 @@ for i in range(len(solutions)):
       s.part2(getInput(s.filename, s.parser)))
 
 unittest.main()
+
+

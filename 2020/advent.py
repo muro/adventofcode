@@ -1133,9 +1133,64 @@ def dangerousIngredients(data: Recipes) -> str:
   alergens = identifyAlergens(data)
   return ','.join(alergens[k] for k in sorted(alergens))
 
+# --------------- 22 --------------- #
+def cards(data: str) -> Tuple[Deque[int], Deque[int]]:
+  p1, p2 = data.split('\n\n')
+  rv = (collections.deque(int(v) for v in p1.splitlines()[1:]),
+        collections.deque(int(v) for v in p2.splitlines()[1:]))
+  # print(rv)
+  return rv
+
+def calcScore(d: Deque[int]) -> int:
+  return sum((i+1) * v for i, v in enumerate(reversed(d)))
+
+def score(data: Tuple[Deque[int], Deque[int]]) -> int:
+  while data[0] and data[1]:
+    c1 = data[0].popleft()
+    c2 = data[1].popleft()
+    if c1 > c2:
+      data[0].append(c1)
+      data[0].append(c2)
+    else:
+      data[1].append(c2)
+      data[1].append(c1)
+  return calcScore(data[0]) if data[0] else calcScore(data[1])
+
+def recursiveGame(data: Tuple[Deque[int], Deque[int]]) -> Tuple[Deque[int], Deque[int]]:
+  """Returns status after a game."""
+  seen: Set[Tuple[Tuple[int], Tuple[int]]] = set()
+  while data[0] and data[1]:
+    has_seen = (tuple(data[0]), tuple(data[1])) in seen
+    print('round seen?', has_seen)
+    seen |= {(tuple(data[0]), tuple(data[1]))}
+    c1 = data[0].popleft()
+    c2 = data[1].popleft()
+    winner = 0
+    if has_seen:
+      pass
+    elif c1 <= len(data[0]) and c2 <= len(data[1]):
+      # copy to new deques:
+      rd1, rd2 = recursiveGame((data[0].copy(), data[1].copy()))
+      if not rd1:
+        winner = 1
+    elif c2 > c1:
+      winner = 1
+
+    if winner == 0:
+      data[0].append(c1)
+      data[0].append(c2)
+    else:
+      data[1].append(c2)
+      data[1].append(c1)
+  return data
+
+def recursiveCombat(data: Tuple[Deque[int], Deque[int]]) -> int:
+  d1, d2 = recursiveGame(data)
+  return calcScore(d1) if d1 else calcScore(d2)
+
 # --------------- Calling all solutions --------------- #
 
-Solution = NamedTuple('Solution', [('filename', str), ('parser', Callable[[str], Any]), ('part1', Callable[[Any], int]), ('part2', Callable[[Any], int])])
+Solution = NamedTuple('Solution', [('filename', str), ('parser', Callable[[str], Any]), ('part1', Callable[[Any], Any]), ('part2', Callable[[Any], Any])])
 
 solutions = [
   Solution('1.txt', numbers, twoAddTo2020, threeAddTo2020),
@@ -1158,12 +1213,13 @@ solutions = [
   Solution('18.txt', lines, ltrPrecedence, addBeforeMul),
   Solution('19.txt', messages, matchingMessages, matchingMessagesWithLoops),
   Solution('20.txt', tiles, arrangeAndMulCorners, roughSea),
-  Solution('21.txt', recipes, countNonAlergens, dangerousIngredients)
+  Solution('21.txt', recipes, countNonAlergens, dangerousIngredients),
+  Solution('22.txt', cards, score, recursiveGame)
 ]
 
 # --------------- Tests --------------- #
 class Test(unittest.TestCase):
-  def singleSolution(self, s: Solution, expected1: int, expected2: int):
+  def singleSolution(self, s: Solution, expected1: Any, expected2: Any):
     self.assertEqual(expected1, s.part1(getInput(s.filename, s.parser)))
     self.assertEqual(expected2, s.part2(getInput(s.filename, s.parser)))
 
@@ -1189,6 +1245,7 @@ class Test(unittest.TestCase):
     self.singleSolution(solutions[18], 142, 294)
     self.singleSolution(solutions[19], 5775714912743, 1836)
     self.singleSolution(solutions[20], 2374, 'fbtqkzc,jbbsjh,cpttmnv,ccrbr,tdmqcl,vnjxjg,nlph,mzqjxq')
+    self.singleSolution(solutions[21], 35562, '?')
 
   def testExamples(self):
     self.assertEqual(4, whereCanTheBagBe(getInput('7a.txt', bags)))
@@ -1246,6 +1303,8 @@ class Test(unittest.TestCase):
     self.assertEqual(273, roughSea(getInput("20a.txt", tiles)))
     self.assertEqual(5, countNonAlergens(getInput("21a.txt", recipes)))
     self.assertEqual('mxmxvkd,sqjhc,fvjkl', dangerousIngredients(getInput('21a.txt', recipes)))
+    self.assertEqual(306, score(getInput('22a.txt', cards)))
+    self.assertEqual(291, recursiveCombat(getInput('22a.txt', cards)))
 
   def testBp(self):
     self.assertEqual([(44, 5)], boardingPasses('FBFBBFFRLR'))

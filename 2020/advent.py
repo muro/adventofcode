@@ -1,34 +1,42 @@
 #! /usr/bin/python3
 
 from __future__ import annotations
-
 import collections
 import itertools
 import math
 import os
 import re
-from typing import cast, Any, Callable, Collection, Dict, Generator, Iterator, List, NamedTuple, Pattern, Set, Tuple, Type, TypeVar
+from typing import cast, Any, Callable, Collection, Deque, Dict, Generator, Iterator, List, NamedTuple, Pattern, Set, Tuple, Type, TypeVar
 import unittest
 
-UNKNOWN = -7
 T = TypeVar('T')
 
 def getInput(filename : str, parser : Callable[[str], T]) -> T:
   with open(os.path.join(os.path.dirname(__file__), 'input', filename)) as f:
     return parser(f.read())
 
-def number(l : str) -> int:
-  return int(l)
+UNKNOWN = -7
+def noop(data: Any) -> int:
+  return UNKNOWN
+
+def fixed(n: int) -> Callable[[Any], int]:
+  return lambda d: n
 
 def numbers(data : str) -> List[int]:
-  return [number(l) for l in data.splitlines() if l]
+  return [int(l) for l in data.splitlines() if l]
 
+def lines(data: str) -> List[str]:
+  return data.splitlines()
+
+
+# --------------- 1 --------------- #
 def twoAddTo2020(data : List[int]) -> int:
   return next(i * j for i, j in itertools.combinations(data, 2) if i + j == 2020)
 
 def threeAddTo2020(data : List[int]) -> int:
   return next(i*j*k for i, j, k in itertools.combinations(data, 3) if i + j + k == 2020)
 
+# --------------- 2 --------------- #
 PasswordEntry = NamedTuple('PasswordEntry', [('password', str), ('rule_char', str), ('min', int), ('max', int)])
 
 def passwords(data : str) -> List[PasswordEntry]:
@@ -52,7 +60,7 @@ def countValidSecondRule(ins: List[PasswordEntry]) -> int:
     return (pe.password[pe.min-1] == pe.rule_char) ^ (pe.password[pe.max-1] == pe.rule_char)
   return len([1 for pe in ins if _isValidSecondRule(pe)])
 
-
+# --------------- 3 --------------- #
 def isTree(data: List[str], x: int, y: int) -> int:
   return y < len(data) and data[y][x % len(data[0])] == '#'
 
@@ -61,7 +69,6 @@ def slope(l: str) -> str:
 
 def slopes(data: str) -> List[str]:
   return [slope(l) for l in data.splitlines() if l]
-
 
 def slopeSteps(data: List[str], down: int, right: int) -> int:
   c = len(data)
@@ -73,9 +80,7 @@ def down1right3(data: List[str]) -> int:
 def multiplySlopes(data: List[str]) -> int:
   return slopeSteps(data, 1, 1) * slopeSteps(data, 1, 3) * slopeSteps(data, 1, 5) * slopeSteps(data, 1, 7) * slopeSteps(data, 2, 1)
 
-def noop(data: Any) -> int:
-  return UNKNOWN
-
+# --------------- 4 --------------- #
 def passports(data: str) -> List[List[Tuple[str, str]]]:
   def passport(s: str) -> List[Tuple[str, str]]:
     return [tuple(e.split(':')) for e in s.split(' ') if e]
@@ -117,6 +122,7 @@ def validPassports2(data: List[List[Tuple[str, str]]]) -> int:
     return not attrs
   return sum(1 for p in data if valid(p))
 
+# --------------- 5 --------------- #
 def boardingPasses(data: str) -> List[Tuple[int, int]]:
   def bp(b: str) -> Tuple[int, int]:
     return (sum(2 ** (6-i) for i, c in enumerate(b[:7]) if c == 'B'),
@@ -130,6 +136,7 @@ def missingSeatId(data: List[Tuple[int, int]]) -> int:
   ids = sorted([8*r + c for r, c in data])
   return [k + 1 for k, l in zip(ids, ids[1:]) if k + 1 != l][0]
 
+# --------------- 6 --------------- #
 def answers(data: str) -> List[List[Set[str]]]:
   return [[set(l) for l in s.splitlines()] for s in data.split('\n\n') if s]
 
@@ -139,6 +146,8 @@ def anyYesses(data: List[List[Set[str]]]) -> int:
 
 def allYesses(data: List[List[Set[str]]]) -> int:
   return sum(len(part[0].intersection(*part)) for part in data)
+
+# --------------- 7 --------------- #
 
 # vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
 # faded blue bags contain no other bags.
@@ -184,6 +193,7 @@ def howManyBags(data: Dict[str, List[Tuple[int, str]]]) -> int:
       bags_to_add.append((c[1], c[0]*count))
   return total - 1
 
+# --------------- 8 --------------- #
 def instructions(data: str) -> List[Tuple[str, int]]:
   def _instruction(s: str) -> Tuple[str, int]:
     inst, number = s.split(' ')
@@ -232,6 +242,7 @@ def accumulatorOnFixedLoop(data: List[Tuple[str, int]]) -> int:
       return a
   return 0
 
+# --------------- 9 --------------- #
 def firstNotSumOf2(data: List[int]) -> int:
   for n in range(25, len(data)):
     try:
@@ -255,6 +266,7 @@ def encryptionWeakness(data: List[int], pre: int=25) -> int:
         return min(data[i:j]) + max(data[i:j])
   assert False
 
+# --------------- 10 --------------- #
 def jolts(data: str) -> List[int]:
   nums = numbers(data)
   return [0] + sorted(nums) + [max(nums) + 3]
@@ -272,6 +284,7 @@ def joltArrangements(nums: List[int]) -> int:
       sum(p for n, p in zip(nums[prevs:i], paths[prevs:]) if n >= nums[i] - 3))
   return paths[-1]
 
+# --------------- 11 --------------- #
 def seats(data: str) -> List[List[str]]:
   return [[c for c in l] for l in data.splitlines()]
 
@@ -328,9 +341,7 @@ def stableOccupancyNeighbors(data: List[List[str]]):
 def stableOccupancyVisible(data: List[List[str]], p: bool=False):
   return stableOccupancy(False, data, p)
 
-def fixed(n: int) -> Callable[[int], int]:
-  return lambda d: n
-
+# --------------- 12 --------------- #
 def directions(data: str) -> List[Tuple[str, int]]:
   return [(d[0], int(d[1:])) for d in data.splitlines()]
 
@@ -399,6 +410,7 @@ def manhattanDistanceMovedWaypoint(data: List[Tuple[str, int]]) -> int:
   x, y = moveByWaypoint()
   return int(abs(x) + abs(y))
 
+# --------------- 13 --------------- #
 def schedule(data: str) -> Tuple[int, List[str]]:
   arrival, schedules = data.splitlines()
   return int(arrival), schedules.split(',')
@@ -432,9 +444,7 @@ def fittingSchedule(data: Tuple[int, List[str]]) -> int:
     multiplier *= s
   return current
 
-def bitmaskProgram(data: str) -> List[str]:
-  return data.splitlines()
-
+# --------------- 14 --------------- #
 def sumValuesAfterBitmask(data: List[str]) -> int:
   memory: Dict[int, int] = collections.defaultdict()
   ormask = 0
@@ -479,6 +489,7 @@ def sumValuesAfterMemBitmask(data: List[str]) -> int:
         memory[addr | i] = value
   return sum(memory.values())
 
+# --------------- 15 --------------- #
 def game(data: List[int], nth: int) -> int:
   last = {}
   for i, n in enumerate(data[:-1]):
@@ -497,6 +508,7 @@ def game2020(data: List[int]) -> int:
 def game3(data: List[int]) -> int:
   return game(data, 30000000)
 
+# --------------- 16 --------------- #
 def trainTickets(data: str) -> Tuple[Dict[str, List[Tuple[int, int]]], List[int], List[List[int]]]:
   parts = data.split("\n\n")
   rules_str = parts[0].splitlines()
@@ -541,7 +553,7 @@ def mulDepartureValues(data: Tuple[Dict[str, List[Tuple[int, int]]], List[int], 
       total *= t
   return total
 
-
+# --------------- 17 --------------- #
 def grid(data: str) -> Set[Tuple[int, int, int, int]]:
   g: Set[Tuple[int, int, int, int]] = set()
   for y, l in enumerate(data.splitlines()):
@@ -582,9 +594,7 @@ def life6_3(data: Set[Tuple[int, int, int, int]]) -> int:
 def life6_4(data: Set[Tuple[int, int, int, int]]) -> int:
   return life4(data, 6)
 
-def expressions(data: str) -> List[str]:
-  return data.splitlines()
-
+# --------------- 18 --------------- #
 class ExpressionNode:
   def eval(self) -> int:
     return 0
@@ -753,7 +763,7 @@ def ltrPrecedence(data: List[str]) -> int:
   """Returns sum of operations, where precedence is left-to-right."""
   return sum(evalLtr(e) for e in data)
 
-
+# --------------- 19 --------------- #
 class BaseNode:
   def final(self) -> bool:
     return True
@@ -859,6 +869,7 @@ def matchingMessagesWithLoops(data: Tuple[Dict[int, BaseNode], List[str]]) -> in
   regexp = compile_regexp(rules)
   return sum(1 for m in msgs if regexp.fullmatch(m))
 
+# --------------- 20 --------------- #
 def flip(nr: int) -> int:
   res = 0
   b = 1
@@ -880,6 +891,23 @@ class FlipTest(unittest.TestCase):
     self.assertEqual(1020, flip(255))
 
 
+def reorientTile(itl: List[str], o: int) -> List[str]:
+  def rotate(t: List[str]) -> List[str]:
+    rt: List[str] = []
+    for j in range(len(t[0])):
+      rt.append(''.join(t[i][j] for i in range(len(t))))
+    rt.reverse()
+    return rt
+
+  tl = itl[:]
+  if o >= 4:
+    tl.reverse()
+    o -= 4
+  while o > 0:
+    tl = rotate(tl)
+    o -= 1
+  return tl
+
 class Tile(object):
   """Tile represents a single tile.
 
@@ -892,20 +920,39 @@ class Tile(object):
     self.tile_id: int = int(md.group(1))
     binTile: str = tile.replace('#', '1').replace('.', '0')
     a = int(binTile.splitlines()[1], 2)
-    b = int(''.join(bt[0] for bt in binTile.splitlines()[1:]), 2)
+    b = int(''.join(bt[-1] for bt in binTile.splitlines()[1:]), 2)
     c = int(binTile.splitlines()[-1], 2)
-    d = int(''.join(bt[-1] for bt in binTile.splitlines()[1:]), 2)
+    d = int(''.join(bt[0] for bt in binTile.splitlines()[1:]), 2)
 
     # This list includes is *all* possible values - when arranging tiles, note that flip only changes 2 opposite edges
-    self.edges: List[int] = [a, b, c, d, flip(a), flip(b), flip(c), flip(d)]
-    self.rotation: int = 0
+    self.alledges: List[int] = [a, b, c, d, flip(a), flip(b), flip(c), flip(d)]
+    self.orientation: int = 0
     self.tile: List[str] = tile.splitlines()[1:]
 
+  def reorient(self):
+    self.orientation = (self.orientation + 1) % 8
+
   def currentEdges(self) -> List[int]:
-    if self.rotation < 4:
-      return self.edges[:4][self.rotation:] + self.edges[:4][:self.rotation]
-    else:
-      return self.edges[4:][self.rotation-4:] + self.edges[4:][:self.rotation-4]
+    """Returns edges as numbers given the current tile orientation, ordered as [top, right, bottom, left]"""
+    def rotate(edges: List[int]) -> List[int]:
+      assert len(edges) == 4, 'Wrong edges length: %d' % len(edges)
+      return [edges[1], flip(edges[2]), edges[3], flip(edges[0])]
+    o = self.orientation
+    edges = self.alledges[:4]
+    if o >= 4:
+      edges = [edges[2], flip(edges[1]), edges[0], flip(edges[3])]
+      o -= 4
+    while o > 0:
+      edges = rotate(edges)
+      o -= 1
+    return edges
+
+  def reorientedTile(self) -> List[str]:
+    return reorientTile(self.tile, self.orientation)
+
+  def borderlessTile(self) -> List[str]:
+    tl = self.reorientedTile()
+    return [l[1:-1] for l in tl][1:-1]
 
 ParsedTiles = Dict[int, Tile]
 
@@ -919,59 +966,174 @@ def tiles(data: str) -> ParsedTiles:
   return tls
 
 def tileIdsPerEdge(tls : Dict[int, Tile]) -> Dict[int, List[int]]:
+  """Returns dict mapping each edge to all tiles containing it"""
   byEdge : Dict[int, List[int]] = {}
   for id, tile in tls.items():
-    for i in tile.edges:
+    for i in tile.alledges:
       if i not in byEdge:
         byEdge[i] = []
       byEdge[i].append(id)
   return byEdge
 
-def arrangeAndMulCorners(data: ParsedTiles) -> int:
-  corners = findCorners(data)
-  return math.prod(corners)
-
 def findCorners(data: ParsedTiles) -> List[int]:
+  """Returns a list of all corners sorted by tile ID."""
   byEdge = tileIdsPerEdge(data)
   corners: List[int] = []
   for id, tile in data.items():
-    if len([e for e in tile.edges if len(byEdge[e]) > 1]) == 4:
+    if len([e for e in tile.alledges if len(byEdge[e]) > 1]) == 4:
       corners.append(id)
-  return corners
+  return sorted(corners)
 
-def createMap(data: ParsedTiles):
+def arrangeAndMulCorners(data: ParsedTiles) -> int:
+  return math.prod(findCorners(data))
+
+SEA_MONSTER = [
+  '                  # ',
+  '#    ##    ##    ###',
+  ' #  #  #  #  #  #   ']
+
+class TileMap():
+  def __init__(self):
+    self.m: Dict[Tuple[int, int], Tile] = {}
+
+  def addTile(self, tile: Tile, x: int, y: int):
+    self.m[(x, y)] = tile
+
+  def map(self) -> str:
+    mx = max(x for x, _ in self.m.keys())
+    my = max(y for _, y in self.m.keys())
+    tl = len(self.m[(0, 0)].tile)
+    lines: List[str] = []
+    for y in range(my + 1):
+      for l in range(tl):
+        if l == 0:
+          lines.append('    '.join(str(self.m[(x, y)].tile_id) + ' / ' + str(self.m[(x, y)].orientation) for x in range(mx + 1)))
+        lines.append(' '.join(self.m[(x, y)].reorientedTile()[l] for x in range(mx + 1)))
+    return '\n'.join(lines)
+
+  def borderlessMap(self) -> str:
+    mx = max(x for x, _ in self.m.keys())
+    my = max(y for _, y in self.m.keys())
+    tl = len(self.m[(0, 0)].tile) - 2
+    lines: List[str] = []
+    for y in range(my + 1):
+      for l in range(tl):
+        lines.append(''.join(self.m[(x, y)].borderlessTile()[l] for x in range(mx + 1)))
+    return '\n'.join(lines)
+
+  def countMonsters(self, o: int):
+    def matches(m: List[str], x: int, y: int) -> bool:
+      for j, l in enumerate(SEA_MONSTER):
+        if not all(m[y+j][x+i] == '#' for i, c in enumerate(l) if c == '#'):
+          return False
+      return True
+    lm = reorientTile(self.borderlessMap().splitlines(), o)
+    found = 0
+    for y in range(len(lm) - 3):
+      for x in range(len(lm[0]) - len(SEA_MONSTER[0])):
+        if matches(lm, x, y):
+          found += 1
+    return found
+
+  def numMonsters(self):
+    for i in range(8):
+      n = self.countMonsters(i)
+      if n > 0:
+        return n
+    assert False, 'No monsters found in any orientation'
+
+  def size(self):
+    return len(self.m)
+
+def createMap(data: ParsedTiles) -> TileMap:
+  byEdge = tileIdsPerEdge(data)
+  def outer(tile: Tile, edgeIndex: int) -> bool:
+    return len(byEdge[tile.currentEdges()[edgeIndex]]) == 1
+
   corners = findCorners(data)
   # fix one corner, then build the map from it:
-  _topLeft : Tile = data[corners[0]]
-  # 144 tiles, so most likely 12x12 map, just in case 144x144
-  # need to store the orientation of the tile as well
+  topLeft: Tile = data[corners[0]]
+  while not (outer(topLeft, 0) and outer(topLeft, 3)):
+    topLeft.reorient()
 
-  # find correct orientation for topLeft:
-  # orientation is stored as
-  #if data[topLeft][0] in data and data[topLeft][1] in data:
-    # top and left row in map, thus orientation is:
-   # []
+  tm = TileMap()
+  used: Set[int] = {topLeft.tile_id}
+  tm.addTile(topLeft, 0, 0)
+  edges: Deque[Tuple[int, int, int, int]] = collections.deque([(topLeft.currentEdges()[1], 1, 0, 0), (topLeft.currentEdges()[2], 2, 0, 0)])
+  while len(edges):
+    e, o, x, y = edges.popleft()
+    candidateTiles = [t for t in byEdge[e] if t not in used]
+    if len(candidateTiles) == 0:
+      continue
+    used.add(candidateTiles[0])
+    tile: Tile = data[candidateTiles[0]]
+    if o == 1:
+      x += 1
+    elif o == 2:
+      y += 1
+    maxRotations = 8
+    while e != tile.currentEdges()[(o + 2) % 4] and maxRotations > 0:
+      tile.reorient()
+      maxRotations -= 1
+    assert maxRotations >= 0
+    tm.addTile(tile, x, y)
+    edges.append((tile.currentEdges()[1], 1, x, y))
+    edges.append((tile.currentEdges()[2], 2, x, y))
+  return tm
 
-def numMonsters(data: ParsedTiles):
-  # create inverse map: edge id --> tile
-  edge_to_tile: Dict[int, List[int]] = {}
-  for k, t in data.items():
-    for i in t.edges:
-      if i not in edge_to_tile:
-        edge_to_tile[i] = []
-      edge_to_tile[i].append(k)
-  _corner = findCorners(data)[0]
-  return 0
-  # ids = [i for _, v in data.items() for i in list(v)]
-  # c = collections.Counter(ids)
-  # tile_connections = {}
-  # for tid in data:
-  #   tile_connections[tid] = 0
-  #   for i in list(data[tid]):
-  #     if c[i] > 1:
-  #       tile_connections[tid] += 1
-  # cs = collections.Counter(tile_connections)
-  # return math.prod(k for k, _ in cs.most_common()[:-5:-1])
+def roughSea(data: ParsedTiles):
+  m = createMap(data)
+  c = m.numMonsters()
+  return m.borderlessMap().count('#') - c * ''.join(SEA_MONSTER).count('#')
+
+# --------------- 21 --------------- #
+Recipes = List[Tuple[List[str], List[str]]]
+def recipes(data: str) -> Recipes:
+  ret: Recipes = []
+  for l in data.splitlines():
+    if ' (contains ' not in l:
+      ret.append((l.split(' '), []))
+      continue
+    ingrediences, allergens = l.split(' (contains ')
+    ret.append((ingrediences.split(' '), allergens[:-1].split(', ')))
+  # print(ret)
+  return ret
+
+def identifyAlergens(data: Recipes) -> Dict[str, str]:
+  def cleanupKnown(ds: Dict[str, Set[str]]) -> None:
+    shrinked = True
+    while shrinked:
+      shrinked = False
+      singles: Set[str] = set(list(v)[0] for v in ds.values() if len(v) == 1)
+      for k in ds:
+        if len(ds[k]) > 1 and ds[k] & singles:
+          ds[k] -= singles
+          shrinked = True
+
+  ds: Dict[str, Set[str]] = {}
+  for ingredients, allergens in data:
+    for a in allergens:
+      if a not in ds:
+        ds[a] = set(ingredients)
+      ds[a] &= set(ingredients)
+      # propagate if single:
+      cleanupKnown(ds)
+  return {k: list(v)[0] for k, v in ds.items()}
+
+def countNonAlergens(data: Recipes) -> int:
+  alergens = identifyAlergens(data)
+  # print(alergens)
+  ingredients: List[str] = []
+  for v, _ in data:
+    ingredients.extend(v)
+  ing_alergens: Set[str] = set(alergens.values())
+  return len([ing for ing in ingredients if ing not in ing_alergens])
+
+def dangerousIngredients(data: Recipes) -> str:
+  alergens = identifyAlergens(data)
+  return ','.join(alergens[k] for k in sorted(alergens))
+
+# --------------- Calling all solutions --------------- #
 
 Solution = NamedTuple('Solution', [('filename', str), ('parser', Callable[[str], Any]), ('part1', Callable[[Any], int]), ('part2', Callable[[Any], int])])
 
@@ -989,15 +1151,17 @@ solutions = [
   Solution('11.txt', seats, fixed(2334), fixed(2100)), #stableOccupancyNeighbors, stableOccupancyVisible),
   Solution('12.txt', directions, manhattanDistanceMovedShip, manhattanDistanceMovedWaypoint),
   Solution('13.txt', schedule, busDepartureById, fittingSchedule),
-  Solution('14.txt', bitmaskProgram, sumValuesAfterBitmask, sumValuesAfterMemBitmask),
+  Solution('14.txt', lines, sumValuesAfterBitmask, sumValuesAfterMemBitmask),
   Solution('15.txt', numbers, game2020, fixed(3745954)), # game3)
   Solution('16.txt', trainTickets, sumInvalidValues, mulDepartureValues),
   Solution('17.txt', grid, fixed(284), fixed(2240)), # life6_3, life6_4)
-  Solution('18.txt', expressions, ltrPrecedence, addBeforeMul),
+  Solution('18.txt', lines, ltrPrecedence, addBeforeMul),
   Solution('19.txt', messages, matchingMessages, matchingMessagesWithLoops),
-  Solution('20.txt', tiles, arrangeAndMulCorners, noop)
+  Solution('20.txt', tiles, arrangeAndMulCorners, roughSea),
+  Solution('21.txt', recipes, countNonAlergens, dangerousIngredients)
 ]
 
+# --------------- Tests --------------- #
 class Test(unittest.TestCase):
   def singleSolution(self, s: Solution, expected1: int, expected2: int):
     self.assertEqual(expected1, s.part1(getInput(s.filename, s.parser)))
@@ -1023,7 +1187,8 @@ class Test(unittest.TestCase):
     self.singleSolution(solutions[16], 284, 2240)
     self.singleSolution(solutions[17], 29839238838303, 201376568795521)
     self.singleSolution(solutions[18], 142, 294)
-    self.singleSolution(solutions[19], 5775714912743, UNKNOWN)
+    self.singleSolution(solutions[19], 5775714912743, 1836)
+    self.singleSolution(solutions[20], 2374, 'fbtqkzc,jbbsjh,cpttmnv,ccrbr,tdmqcl,vnjxjg,nlph,mzqjxq')
 
   def testExamples(self):
     self.assertEqual(4, whereCanTheBagBe(getInput('7a.txt', bags)))
@@ -1053,9 +1218,9 @@ class Test(unittest.TestCase):
     self.assertEqual(1261476, fittingSchedule(schedule("1\n67,7,x,59,61")))
     self.assertEqual(1202161486, fittingSchedule(schedule("1\n1789,37,47,1889")))
     program1 = "mask = XXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XXXX0X\nmem[8] = 11\nmem[7] = 101\nmem[8] = 0"
-    self.assertEqual(165, sumValuesAfterBitmask(bitmaskProgram(program1)))
+    self.assertEqual(165, sumValuesAfterBitmask(lines(program1)))
     program2 = "mask = 000000000000000000000000000000X1001X\nmem[42] = 100\nmask = 00000000000000000000000000000000X0XX\nmem[26] = 1"
-    self.assertEqual(208, sumValuesAfterMemBitmask(bitmaskProgram(program2)))
+    self.assertEqual(208, sumValuesAfterMemBitmask(lines(program2)))
     self.assertEqual(0, game([0, 3, 6], 10))
     self.assertEqual(1, game2020([1, 3, 2]))
     self.assertEqual(10, game2020([2, 1, 3]))
@@ -1078,7 +1243,9 @@ class Test(unittest.TestCase):
     self.assertEqual(2, matchingMessages(messages(msgs)))
     self.assertEqual(12, matchingMessagesWithLoops(getInput("19a.txt", messages)))
     self.assertEqual(20899048083289, arrangeAndMulCorners(getInput("20a.txt", tiles)))
-    self.assertEqual(-1, numMonsters(getInput("20a.txt", tiles)))
+    self.assertEqual(273, roughSea(getInput("20a.txt", tiles)))
+    self.assertEqual(5, countNonAlergens(getInput("21a.txt", recipes)))
+    self.assertEqual('mxmxvkd,sqjhc,fvjkl', dangerousIngredients(getInput('21a.txt', recipes)))
 
   def testBp(self):
     self.assertEqual([(44, 5)], boardingPasses('FBFBBFFRLR'))

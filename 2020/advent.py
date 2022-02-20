@@ -1,89 +1,95 @@
 #! /usr/bin/python3
 
+from __future__ import annotations
+
 import collections
 import itertools
 import math
 import os
 import re
+from typing import cast, Any, Callable, Collection, Dict, Generator, Iterator, List, NamedTuple, Pattern, Set, Tuple, Type, TypeVar
 import unittest
 
+UNKNOWN = -7
+T = TypeVar('T')
 
-def getInput(filename, parser):
+def getInput(filename : str, parser : Callable[[str], T]) -> T:
   with open(os.path.join(os.path.dirname(__file__), 'input', filename)) as f:
     return parser(f.read())
 
-def number(l):
+def number(l : str) -> int:
   return int(l)
 
-def numbers(data):
+def numbers(data : str) -> List[int]:
   return [number(l) for l in data.splitlines() if l]
 
-def twoAddTo2020(data):
+def twoAddTo2020(data : List[int]) -> int:
   return next(i * j for i, j in itertools.combinations(data, 2) if i + j == 2020)
 
-def threeAddTo2020(data):
+def threeAddTo2020(data : List[int]) -> int:
   return next(i*j*k for i, j, k in itertools.combinations(data, 3) if i + j + k == 2020)
 
-PasswordEntry = collections.namedtuple('PasswordEntry', ['password', 'rule_char', 'min', 'max'])
+PasswordEntry = NamedTuple('PasswordEntry', [('password', str), ('rule_char', str), ('min', int), ('max', int)])
 
-def passwords(data):
-  def password(l):
+def passwords(data : str) -> List[PasswordEntry]:
+  def password(l : str) -> PasswordEntry:
     rule, pwd = l.split(':')
     pwd = pwd[1:]
-    m = re.match('(\d+)\-(\d+)\s([a-z])', rule)
+    m = re.match(r'(\d+)\-(\d+)\s([a-z])', rule)
+    assert m
     return PasswordEntry(pwd, m[3], int(m[1]), int(m[2]))
   return [password(l) for l in data.splitlines() if l]
 
 
-def countValidFirstRule(ins):
-  def _isValidFirstRule(pe):
+def countValidFirstRule(ins: List[PasswordEntry]) -> int:
+  def _isValidFirstRule(pe: PasswordEntry) -> bool:
     cc = pe.password.count(pe.rule_char)
     return cc >= pe.min and cc <= pe.max
   return len([1 for pe in ins if _isValidFirstRule(pe)])
 
-def countValidSecondRule(ins):
-  def _isValidSecondRule(pe):
+def countValidSecondRule(ins: List[PasswordEntry]) -> int:
+  def _isValidSecondRule(pe: PasswordEntry) -> bool:
     return (pe.password[pe.min-1] == pe.rule_char) ^ (pe.password[pe.max-1] == pe.rule_char)
   return len([1 for pe in ins if _isValidSecondRule(pe)])
 
 
-def isTree(data, x, y):
+def isTree(data: List[str], x: int, y: int) -> int:
   return y < len(data) and data[y][x % len(data[0])] == '#'
 
-def slope(l):
+def slope(l: str) -> str:
   return l.strip()
 
-def slopes(data):
+def slopes(data: str) -> List[str]:
   return [slope(l) for l in data.splitlines() if l]
 
 
-def slopeSteps(data, down, right):
+def slopeSteps(data: List[str], down: int, right: int) -> int:
   c = len(data)
   return sum(1 for x, y in zip(range(0, right*c, right), range(0, down*c, down)) if isTree(data, x, y))
 
-def down1right3(data):
+def down1right3(data: List[str]) -> int:
   return slopeSteps(data, 1, 3)
 
-def multiplySlopes(data):
+def multiplySlopes(data: List[str]) -> int:
   return slopeSteps(data, 1, 1) * slopeSteps(data, 1, 3) * slopeSteps(data, 1, 5) * slopeSteps(data, 1, 7) * slopeSteps(data, 2, 1)
 
-def noop(data):
-  return '?'
+def noop(data: Any) -> int:
+  return UNKNOWN
 
-def passports(data):
-  def passport(s):
+def passports(data: str) -> List[List[Tuple[str, str]]]:
+  def passport(s: str) -> List[Tuple[str, str]]:
     return [tuple(e.split(':')) for e in s.split(' ') if e]
   return [passport(s.replace('\n', ' ')) for s in data.split('\n\n') if s]
 
-def validPassports(data):
-  def valid(p):
+def validPassports(data: List[List[Tuple[str, str]]]) -> int:
+  def valid(p: List[Tuple[str, str]]) -> bool:
     attrs = {'byr', 'iyr', 'eyr', 'hgt', 'hcl', 'ecl', 'pid', 'cid'}
     return attrs == {k for k, _ in p} | {'cid'}
   return sum(1 for p in data if valid(p))
 
-def validPassports2(data):
-  def valid(p):
-    def hgt(v):
+def validPassports2(data: List[List[Tuple[str, str]]]) -> int:
+  def valid(p: List[Tuple[str, str]]) -> bool:
+    def hgt(v: str) -> bool:
       if len(v) < 3:
         return False
       if v[-2:] == 'in':
@@ -93,14 +99,14 @@ def validPassports2(data):
       else:
         return False
 
-    attrs = {
+    attrs: Dict[str, Callable[[str], bool]] = {
       'byr': (lambda v: 1920 <= int(v) <= 2002),
       'iyr': (lambda v: 2010 <= int(v) <= 2020),
       'eyr': (lambda v: 2020 <= int(v) <= 2030),
       'hgt': hgt,
-      'hcl': (lambda v: re.match('^#[0-9a-z]{6}$', v)),
+      'hcl': (lambda v: re.match(r'^#[0-9a-z]{6}$', v) is not None),
       'ecl': (lambda v: v in ['amb', 'blu', 'brn', 'gry', 'grn', 'hzl', 'oth']),
-      'pid': (lambda v: re.match('^[0-9]{9}$', v)),
+      'pid': (lambda v: re.match(r'^[0-9]{9}$', v) is not None),
       'cid': (lambda _: True)}
     for (k, v) in p:
       if k not in attrs or not attrs[k](v):
@@ -111,49 +117,50 @@ def validPassports2(data):
     return not attrs
   return sum(1 for p in data if valid(p))
 
-def boardingPasses(data):
-  def bp(b):
+def boardingPasses(data: str) -> List[Tuple[int, int]]:
+  def bp(b: str) -> Tuple[int, int]:
     return (sum(2 ** (6-i) for i, c in enumerate(b[:7]) if c == 'B'),
             sum(2 ** (2-i) for i, c in enumerate(b[-3:]) if c == 'R'))
   return [bp(l) for l in data.split('\n') if l]
 
-def highestSeatId(data):
+def highestSeatId(data: List[Tuple[int, int]]) -> int:
   return max(8*r + c for r, c in data)
 
-def missingSeatId(data):
+def missingSeatId(data: List[Tuple[int, int]]) -> int:
   ids = sorted([8*r + c for r, c in data])
   return [k + 1 for k, l in zip(ids, ids[1:]) if k + 1 != l][0]
 
-def answers(data):
+def answers(data: str) -> List[List[Set[str]]]:
   return [[set(l) for l in s.splitlines()] for s in data.split('\n\n') if s]
 
-def anyYesses(data):
-  return sum(len(set().union(*part)) for part in data)
+def anyYesses(data: List[List[Set[str]]]) -> int:
+  s: Set[str] = set()
+  return sum(len(s.union(*part)) for part in data)
 
-def allYesses(data):
+def allYesses(data: List[List[Set[str]]]) -> int:
   return sum(len(part[0].intersection(*part)) for part in data)
 
 # vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
 # faded blue bags contain no other bags.
-def bagcontents(line):
+def bagcontents(line: str) -> Tuple[str, List[Tuple[int, str]]]:
   # returns pair (bag, (count, bag types))
   bag, contents = line.split(" bags contain ")
-  bagtypes = []
+  bagtypes: List[Tuple[int, str]] = []
   for what in contents.split(', '):
     if not what:
       continue
-    md = re.match('(\d+) (\w+ \w+) bags?\.?', what)
+    md = re.match(r'(\d+) (\w+ \w+) bags?\.?', what)
     if md:
       bagtypes.append((int(md.group(1)), md.group(2)))
   return (bag, bagtypes)
 
-def bags(data):
+def bags(data: str) -> Dict[str, List[Tuple[int, str]]]:
   return dict(bagcontents(l) for l in data.splitlines() if l)
 
-def whereCanTheBagBe(data):
-  colors = set()
+def whereCanTheBagBe(data: Dict[str, List[Tuple[int, str]]]) -> int:
+  colors: Set[str] = set()
   bags_to_check = collections.deque(['shiny gold'])
-  bags_checked = set()
+  bags_checked: Set[str] = set()
   while bags_to_check:
     checking = bags_to_check.pop()
     bags_checked.add(checking)
@@ -166,8 +173,8 @@ def whereCanTheBagBe(data):
           colors.add(bag)
   return len(colors)
 
-def howManyBags(data):
-  bags_to_add = collections.deque([('shiny gold', 1)])
+def howManyBags(data: Dict[str, List[Tuple[int, str]]]) -> int:
+  bags_to_add: Collection[Tuple[str, int]] = collections.deque([('shiny gold', 1)])
   total = 0
   while bags_to_add:
     bag, count = bags_to_add.pop()
@@ -177,14 +184,14 @@ def howManyBags(data):
       bags_to_add.append((c[1], c[0]*count))
   return total - 1
 
-def instructions(data):
-  def _instruction(s):
+def instructions(data: str) -> List[Tuple[str, int]]:
+  def _instruction(s: str) -> Tuple[str, int]:
     inst, number = s.split(' ')
     return (inst, int(number))
   return [_instruction(l) for l in data.splitlines() if l]
 
-def accumulatorBeforeCycle(data):
-  visited = set()
+def accumulatorBeforeCycle(data: List[Tuple[str, int]]) -> int:
+  visited : Set[int] = set()
   a = 0
   pc = 0
   while pc not in visited:
@@ -199,7 +206,7 @@ def accumulatorBeforeCycle(data):
       pc += num
   return a
 
-def accumulatorOnFixedLoop(data):
+def accumulatorOnFixedLoop(data: List[Tuple[str, int]]) -> int:
   org_data = data[:]
   # replace single operation
   for i, (inst, num) in enumerate(data):
@@ -225,35 +232,38 @@ def accumulatorOnFixedLoop(data):
       return a
   return 0
 
-def firstNotSumOf2(data):
+def firstNotSumOf2(data: List[int]) -> int:
   for n in range(25, len(data)):
     try:
-      next(i+j for i, j in itertools.combinations(data[n-25:n], 2) if i + j == data[n])
+      _ = next(i+j for i, j in itertools.combinations(data[n-25:n], 2) if i + j == data[n])
     except StopIteration:
       return data[n]
+  assert False
 
-def encryptionWeakness(data, pre=25):
-  def _firstNotSumOf2(data, pre):
+def encryptionWeakness(data: List[int], pre: int=25) -> int:
+  def _firstNotSumOf2(data: List[int], pre: int) -> Tuple[int, int]:
     for n in range(pre, len(data)):
       try:
         next(i+j for i, j in itertools.combinations(data[n-pre:n], 2) if i + j == data[n])
       except StopIteration:
         return n, data[n]
+    assert False
   n, s = _firstNotSumOf2(data, pre)
   for i in range(n):
     for j in range(i, n):
       if sum(data[i:j]) == s:
         return min(data[i:j]) + max(data[i:j])
+  assert False
 
-def jolts(data):
+def jolts(data: str) -> List[int]:
   nums = numbers(data)
   return [0] + sorted(nums) + [max(nums) + 3]
 
-def allJolts(nums):
+def allJolts(nums: List[int]) -> int:
   c = collections.Counter(t - o for o, t in zip(nums, nums[1:]))
   return c[1] * c[3]
 
-def joltArrangements(nums):
+def joltArrangements(nums: List[int]) -> int:
   # check up to last 3 items:
   paths = [1]
   for i in range(1, len(nums)):
@@ -262,20 +272,20 @@ def joltArrangements(nums):
       sum(p for n, p in zip(nums[prevs:i], paths[prevs:]) if n >= nums[i] - 3))
   return paths[-1]
 
-def seats(data):
+def seats(data: str) -> List[List[str]]:
   return [[c for c in l] for l in data.splitlines()]
 
-def stableOccupancy(onlyNeighbors, data, p=False):
+def stableOccupancy(onlyNeighbors: bool, data: List[List[str]], p: bool=False) -> int:
   maxi = len(data)
   maxj = len(data[0])
 
-  def countOccupied(i, j):
-    def occupied(i, j):
+  def countOccupied(i: int, j: int) -> int:
+    def occupied(i: int, j: int) -> int:
       return 0 <= i < maxi and 0 <= j < maxj and data[i][j] == '#'
     return len([1 for (i_, j_) in itertools.product(range(i-1, i+2), range(j-1, j+2)) if (i_ != i or j_ != j) and occupied(i_, j_)])
 
-  def countVisibleOccupied(i, j):
-    def visibleOccupied(dx, dy):
+  def countVisibleOccupied(i: int, j: int) -> int:
+    def visibleOccupied(dx: int, dy: int) -> bool:
       i_ = i + dx
       j_ = j + dy
       while 0 <= i_ < maxi and 0 <= j_ < maxj:
@@ -285,20 +295,21 @@ def stableOccupancy(onlyNeighbors, data, p=False):
           return True
         i_ += dx
         j_ += dy
+      return False
     return len([1 for (x, y) in itertools.product(range(-1, 2), repeat=2) if (x != 0 or y != 0) and visibleOccupied(x, y)])
 
   count = countOccupied if onlyNeighbors else countVisibleOccupied
   needEmpty = 4 if onlyNeighbors else 5
 
-  def applyRule(i, j):
+  def applyRule(i: int, j: int) -> str:
     if data[i][j] == 'L' and count(i, j) == 0:
       return '#'
     elif data[i][j] == '#' and count(i, j) >= needEmpty:
       return 'L'
     return data[i][j]
 
-  def applyAll():
-    nd = []
+  def applyAll() -> List[List[str]]:
+    nd: List[List[str]] = []
     for i in range(maxi):
       nd.append([applyRule(i, j) for j in range(maxj)])
     return nd
@@ -311,23 +322,23 @@ def stableOccupancy(onlyNeighbors, data, p=False):
     n += 1
   return len([d for sublist in data for d in sublist if d == '#'])
 
-def stableOccupancyNeighbors(data):
+def stableOccupancyNeighbors(data: List[List[str]]):
   return stableOccupancy(True, data)
 
-def stableOccupancyVisible(data, p=False):
+def stableOccupancyVisible(data: List[List[str]], p: bool=False):
   return stableOccupancy(False, data, p)
 
-def fixed(n):
+def fixed(n: int) -> Callable[[int], int]:
   return lambda d: n
 
-def directions(data):
+def directions(data: str) -> List[Tuple[str, int]]:
   return [(d[0], int(d[1:])) for d in data.splitlines()]
 
-def manhattanDistanceMovedShip(data):
-  def moveShip():
-    d = 0
-    x = 0
-    y = 0
+def manhattanDistanceMovedShip(data: List[Tuple[str, int]]) -> int:
+  def moveShip() -> Tuple[float, float]:
+    d: int = 0
+    x: float = 0
+    y: float = 0
     for c, n in data:
       if c == 'N':
         y += n
@@ -348,14 +359,14 @@ def manhattanDistanceMovedShip(data):
   x, y = moveShip()
   return int(abs(x) + abs(y))
 
-def manhattanDistanceMovedWaypoint(data):
-  def moveByWaypoint():
-    wx = 10
-    wy = 1
+def manhattanDistanceMovedWaypoint(data: List[Tuple[str, int]]) -> int:
+  def moveByWaypoint() -> Tuple[float, float]:
+    wx: float = 10
+    wy: float = 1
     x = 0
     y = 0
 
-    def degrees():
+    def degrees() -> float:
       if wx == 0:
         return 0 if wy > 0 else 180
       dg = math.degrees(math.atan(wy / wx))
@@ -363,9 +374,9 @@ def manhattanDistanceMovedWaypoint(data):
         return 180 + dg
       return 360 + dg if wy < 0 else dg
 
-    def rotate(n):
-      dg = degrees() + n
-      d = math.sqrt(wx * wx + wy * wy)
+    def rotate(n: int) -> Tuple[float, float]:
+      dg: float = degrees() + n
+      d: float = math.sqrt(wx * wx + wy * wy)
       return math.cos(math.radians(dg)) * d, math.sin(math.radians(dg)) * d
 
     for c, n in data:
@@ -388,15 +399,15 @@ def manhattanDistanceMovedWaypoint(data):
   x, y = moveByWaypoint()
   return int(abs(x) + abs(y))
 
-def schedule(data):
+def schedule(data: str) -> Tuple[int, List[str]]:
   arrival, schedules = data.splitlines()
   return int(arrival), schedules.split(',')
 
-def busDepartureById(data):
+def busDepartureById(data: Tuple[int, List[str]]) -> int:
   arrival = data[0]
   schedules = [int(s) for s in data[1] if s != 'x']
 
-  def nextDeparture(s : int):
+  def nextDeparture(s : int) -> int:
     return arrival if (arrival % s) == 0 else s + arrival - (arrival % s)
 
   mn = (schedules[0], schedules[0])
@@ -406,8 +417,8 @@ def busDepartureById(data):
       mn = (wait, s)
   return mn[0] * mn[1]
 
-def fittingSchedule(data):
-  schedules = []
+def fittingSchedule(data: Tuple[int, List[str]]) -> int:
+  schedules: List[Tuple[int, int]] = []
   for i, d in enumerate(data[1]):
     if d != 'x':
       schedules.append((int(d), i))
@@ -421,12 +432,11 @@ def fittingSchedule(data):
     multiplier *= s
   return current
 
-def bitmaskProgram(data):
+def bitmaskProgram(data: str) -> List[str]:
   return data.splitlines()
 
-def sumValuesAfterBitmask(data):
-
-  memory = collections.defaultdict()
+def sumValuesAfterBitmask(data: List[str]) -> int:
+  memory: Dict[int, int] = collections.defaultdict()
   ormask = 0
   andmask = 0
   for inst in data:
@@ -435,13 +445,14 @@ def sumValuesAfterBitmask(data):
       ormask = int(maskstr.replace('X', '0'), 2)
       andmask = int(maskstr.replace('X', '1'), 2)
     else:
-      md = re.match('mem\[(\d+)\] = (\d+)', inst)
+      md = re.match(r'mem\[(\d+)\] = (\d+)', inst)
+      assert md
       addr, value = int(md[1]), int(md[2])
       memory[addr] = (value & andmask) | ormask
   return sum(memory.values())
 
-def sumValuesAfterMemBitmask(data):
-  def genAddr(n : int):
+def sumValuesAfterMemBitmask(data: List[str]) -> int:
+  def genAddr(n : int) -> List[int]:
     if (n == 0):
       return []
     # find highest bit:
@@ -451,7 +462,7 @@ def sumValuesAfterMemBitmask(data):
     inner = genAddr(n & ~(2 ** maxBit))
     return inner + [(2 ** maxBit) | i for i in inner ]
 
-  memory = collections.defaultdict()
+  memory: Dict[int, int] = collections.defaultdict()
   ormask = 0
   xmask = 0
   for inst in data:
@@ -460,35 +471,36 @@ def sumValuesAfterMemBitmask(data):
       ormask = int(maskstr.replace('X', '0'), 2)
       xmask = int(maskstr.replace('1', '0').replace('X', '1'), 2)
     else:
-      md = re.match('mem\[(\d+)\] = (\d+)', inst)
+      md = re.match(r'mem\[(\d+)\] = (\d+)', inst)
+      assert md
       addr, value = int(md[1]), int(md[2])
       addr = (addr | ormask) & (~xmask)
       for i in genAddr(xmask):
         memory[addr | i] = value
   return sum(memory.values())
 
-def game(data, nth):
+def game(data: List[int], nth: int) -> int:
   last = {}
   for i, n in enumerate(data[:-1]):
      # skip last item to check its previous last position below
     last[n] = i
   prev = data[-1]
   for i in range(len(data), nth):
-    n = i - last[prev] - 1 if prev in last else 0
+    n: int = i - last[prev] - 1 if prev in last else 0
     last[prev] = i - 1
     prev = n
   return prev
 
-def game2020(data):
+def game2020(data: List[int]) -> int:
   return game(data, 2020)
 
-def game3(data):
+def game3(data: List[int]) -> int:
   return game(data, 30000000)
 
-def trainTickets(data):
+def trainTickets(data: str) -> Tuple[Dict[str, List[Tuple[int, int]]], List[int], List[List[int]]]:
   parts = data.split("\n\n")
   rules_str = parts[0].splitlines()
-  rules = {}
+  rules: Dict[str, List[Tuple[int, int]]] = {}
   for s in rules_str:
     name, rs = s.split(": ")
     rules_nums = [(int(r.split('-')[0]), int(r.split('-')[1])) for r in rs.split(' or ')]
@@ -497,15 +509,14 @@ def trainTickets(data):
   nearbyTickets = [[int(i) for i in values.split(",")] for values in parts[2].splitlines()[1:]]
   return rules, yourTicket, nearbyTickets
 
-def isValid(n, rules):
+def isValid(n: int, rules: Dict[str, List[Tuple[int, int]]]) -> bool:
   return any(True for rule in rules.values() for l, h in rule if n >= l and n <= h)
 
-def sumInvalidValues(data):
-  rules, yourTicket, nearbyTickets = data
-
+def sumInvalidValues(data: Tuple[Dict[str, List[Tuple[int, int]]], List[int], List[List[int]]]) -> int:
+  rules, _yourTicket, nearbyTickets = data
   return sum(n for ticket in nearbyTickets for n in ticket if not isValid(n, rules))
 
-def mulDepartureValues(data):
+def mulDepartureValues(data: Tuple[Dict[str, List[Tuple[int, int]]], List[int], List[List[int]]]) -> int:
   rules, yourTicket, nearbyTickets = data
   validTickets = [ticket for ticket in nearbyTickets if all(isValid(n, rules) for n in ticket)]
   validRules = [list(rules.keys()) for _ in yourTicket]
@@ -531,70 +542,72 @@ def mulDepartureValues(data):
   return total
 
 
-def grid(data):
-  g = set()
+def grid(data: str) -> Set[Tuple[int, int, int, int]]:
+  g: Set[Tuple[int, int, int, int]] = set()
   for y, l in enumerate(data.splitlines()):
     for x, c in enumerate(l):
       if c == '#':
         g.add((x, y, 0, 0))
   return g
 
-def print_grid(data):
+def print_grid(data: Set[Tuple[int, int, int, int]]) -> None:
   sg = sorted(list(data))
   print(sg)
 
-def count_neighbors3(data, x, y, z):
+def count_neighbors3(data: Set[Tuple[int, int, int, int]], x: int, y: int, z: int) -> int:
   return len([True for (i, j, k) in itertools.product([-1, 0, 1], repeat=3) if (i != 0 or j != 0 or k != 0) and (x+i, y+j, z+k, 0) in data])
 
-def count_neighbors4(data, x, y, z, w):
+def count_neighbors4(data: Set[Tuple[int, int, int, int]], x: int, y: int, z: int, w: int) -> int:
   return len([True for (i, j, k, l) in itertools.product([-1, 0, 1], repeat=4) if (i != 0 or j != 0 or k != 0 or l != 0) and (x+i, y+j, z+k, w+l) in data])
 
-def next_iter3(data):
+def next_iter3(data: Set[Tuple[int, int, int, int]]):
   return {(x, y, z, 0) for (x, y, z) in itertools.product(range(-6, 15), repeat=3) if count_neighbors3(data, x, y, z) == 3 or ((x, y, z, 0) in data and count_neighbors3(data, x, y, z) == 2)}
 
-def next_iter4(data):
+def next_iter4(data: Set[Tuple[int, int, int, int]]):
   return {(x, y, z, w) for (x, y, z, w) in itertools.product(range(-6, 15), repeat=4) if count_neighbors4(data, x, y, z, w) == 3 or ((x, y, z, w) in data and count_neighbors4(data, x, y, z, w) == 2)}
 
-def life3(data, iterations):
-  for i in range(iterations):
+def life3(data: Set[Tuple[int, int, int, int]], iterations: int) -> int:
+  for _ in range(iterations):
     data = next_iter3(data)
   return len(data)
 
-def life4(data, iterations):
-  for i in range(iterations):
+def life4(data: Set[Tuple[int, int, int, int]], iterations: int) -> int:
+  for _ in range(iterations):
     data = next_iter4(data)
   return len(data)
 
-def life6_3(data):
+def life6_3(data: Set[Tuple[int, int, int, int]]) -> int:
   return life3(data, 6)
 
-def life6_4(data):
+def life6_4(data: Set[Tuple[int, int, int, int]]) -> int:
   return life4(data, 6)
 
-def expressions(data):
+def expressions(data: str) -> List[str]:
   return data.splitlines()
 
 class ExpressionNode:
-  def eval(self):
+  def eval(self) -> int:
     return 0
 
 class Operator(ExpressionNode):
-  def __init__(self, op):
+  def __init__(self, op: str):
     self.op = op
-    self.left = None
-    self.right = None
+    self.left: ExpressionNode | None = None
+    self.right: ExpressionNode | None = None
 
-  def eval(self):
+  def eval(self) -> int:
+    assert self.left and self.right
     if self.op == '+':
       return self.left.eval() + self.right.eval()
     elif self.op == '-':
       return self.left.eval() - self.right.eval()
-    if self.op == '*':
+    elif self.op == '*':
       return self.left.eval() * self.right.eval()
-    if self.op == '/':
-      return self.left.eval() / self.right.eval()
+    elif self.op == '/':
+      return int(self.left.eval() / self.right.eval())
+    assert False, 'Unexpected operation: %s' % self.op
 
-  def __repr__(self):
+  def __repr__(self) -> str:
     s = "<"
     if self.left:
       s += self.left.__repr__()
@@ -613,36 +626,36 @@ class Multiplication(Operator):
     super().__init__('*')
 
 class Number(ExpressionNode):
-  def __init__(self, num):
+  def __init__(self, num: int):
     self.num = num
 
-  def eval(self):
+  def eval(self) -> int:
     return self.num
 
-  def __repr__(self):
+  def __repr__(self) -> str:
     return str(self.num)
 
 class OpenParen(ExpressionNode):
   def __init__(self):
     pass
 
-  def __repr__(self):
+  def __repr__(self) -> str:
     return '('
 
 class CloseParen(ExpressionNode):
-  def __repr__(self):
+  def __repr__(self) -> str:
     return ')'
 
 class End(ExpressionNode):
-  def __repr__(self):
+  def __repr__(self) -> str:
     return '.'
 
-def tokenize(e):
-  current = None
+def tokenize(e: str) -> Generator[ExpressionNode, None, None]:
+  current: str = ''
   for c in e:
     if c == ' ' and current:
       yield Number(int(current))
-      current = None
+      current = ''
     elif c in '1234567890':
       if not current:
         current = c
@@ -657,22 +670,23 @@ def tokenize(e):
     elif c == ')':
       if current:
         yield Number(int(current))
-        current = None
+        current = ''
       yield CloseParen()
   if current:
     yield Number(int(current))
-    current = None
+    current = ''
   yield End()
 
-def evalLtr(e):
-  def getNode(token_iter):
+def evalLtr(e: str) -> int:
+  def getNode(token_iter: Iterator[ExpressionNode]) -> ExpressionNode:
     n = next(token_iter)
     if isinstance(n, Number):
       return n
     elif isinstance(n, OpenParen):
       return subtree(token_iter, endWhen=CloseParen)
+    assert False, 'Unexpected node instance type: %s' % type(n)
 
-  def subtree(token_iter, endWhen=End):
+  def subtree(token_iter: Iterator[ExpressionNode], endWhen: Type[ExpressionNode]=End) -> ExpressionNode:
     left = getNode(token_iter)
     o = next(token_iter)
     while not isinstance(o, endWhen):
@@ -686,16 +700,17 @@ def evalLtr(e):
   expr = subtree(iter(tokens), End)
   return expr.eval()
 
-def evalAddBeforeMul(e):
-  def getNode(token_iter):
+def evalAddBeforeMul(e: str) -> int:
+  def getNode(token_iter: Iterator[ExpressionNode]) -> ExpressionNode:
     n = next(token_iter)
     if isinstance(n, Number):
       return n
     elif isinstance(n, OpenParen):
       return subtree(token_iter, endWhen=CloseParen)
+    assert False, 'Unexpected node instance type: %s' % type(n)
 
-  def subtree(token_iter, endWhen=End):
-    nodes = [getNode(token_iter)]
+  def subtree(token_iter: Iterator[ExpressionNode], endWhen: Type[ExpressionNode]=End) -> ExpressionNode:
+    nodes: List[ExpressionNode] = [getNode(token_iter)]
     op = next(token_iter)
     while not isinstance(op, endWhen):
       nodes.append(op)
@@ -715,14 +730,14 @@ def evalAddBeforeMul(e):
           empty_addition_index = i
           break
       if empty_addition_index is not None:
-        nodes[empty_addition_index].left = nodes[empty_addition_index-1]
-        nodes[empty_addition_index].right = nodes[empty_addition_index+1]
+        cast(Operator, nodes[empty_addition_index]).left = nodes[empty_addition_index-1]
+        cast(Operator, nodes[empty_addition_index]).right = nodes[empty_addition_index+1]
         del nodes[empty_addition_index+1]
         del nodes[empty_addition_index-1]
     # now merge everything left:
     while len(nodes) > 1:
-      nodes[1].left = nodes[0]
-      nodes[1].right = nodes[2]
+      cast(Operator, nodes[1]).left = nodes[0]
+      cast(Operator, nodes[1]).right = nodes[2]
       del nodes[2]
       del nodes[0]
     return nodes[0]
@@ -731,73 +746,89 @@ def evalAddBeforeMul(e):
   expr = subtree(iter(tokens), End)
   return expr.eval()
 
-def addBeforeMul(data):
+def addBeforeMul(data: List[str]) -> int:
   return sum(evalAddBeforeMul(e) for e in data)
 
-def ltrPrecedence(data):
+def ltrPrecedence(data: List[str]) -> int:
   """Returns sum of operations, where precedence is left-to-right."""
   return sum(evalLtr(e) for e in data)
 
-class Text:
-  def __init__(self, text):
-    self.text = text
 
-  def final(self):
+class BaseNode:
+  def final(self) -> bool:
     return True
 
-  def value(self):
-    return self.text
+  def value(self) -> str:
+    return ''
 
-  def __repr__(self):
-    return self.text
+  def __repr__(self) -> str:
+    return 'BaseNode - None'
 
-  def update(self, rules):
+  def update(self, rules: Rules) -> BaseNode:
     return self
 
-class Reference:
-  def __init__(self, n):
+Rules = Dict[int, BaseNode]
+
+class Text(BaseNode):
+  def __init__(self, text :str):
+    self.text: str = text
+
+  def final(self) -> bool:
+    return True
+
+  def value(self) -> str:
+    return self.text
+
+  def __repr__(self) -> str:
+    return self.text
+
+  def update(self, rules: Rules) -> BaseNode:
+    return self
+
+class Reference(BaseNode):
+  def __init__(self, n: int):
     self.n = n
 
-  def final(self):
+  def final(self) -> bool:
     return False
 
-  def value(self):
-    pass
+  def value(self) -> str:
+    return ''
 
-  def __repr__(self):
+  def __repr__(self) -> str:
     return str(self.n)
 
-  def update(self, rules):
+  def update(self, rules: Rules) -> BaseNode:
     return rules[self.n] if rules[self.n].final() else self
 
-class Or:
-  def __init__(self, alternatives):
+class Or(BaseNode):
+  def __init__(self, alternatives: List[List[BaseNode]]):
     self.alternatives = alternatives
-    self._final = False
-    self.val = None
+    self._final: bool = False
+    self.val: str = ''
 
-  def final(self):
+  def final(self) -> bool:
     if not self._final:
       self._final = all(all(a.final() for a in alt) for alt in self.alternatives)
     return self._final
 
-  def value(self):
+  def value(self) -> str:
     if self.final() and not self.val:
       self.val = '(' + '|'.join('(' + ''.join(v.value() for v in a) + ')' for a in self.alternatives) + ')'
     return self.val
 
-  def __repr__(self):
+  def __repr__(self) -> str:
     return '|'.join(a.__repr__() for a in self.alternatives)
 
-  def update(self, rules):
+  def update(self, rules: Rules) -> BaseNode:
     for a in self.alternatives:
       for i in range(len(a)):
         a[i] = a[i].update(rules)
     return self
 
-def messages(data):
+def messages(data: str) -> Tuple[Rules, List[str]]:
   d = data.split("\n\n")
-  rules = {}
+  rules: Rules = {}
   for rule in d[0].splitlines():
     n, text = rule.split(': ')
     if '"' in text:
@@ -808,31 +839,31 @@ def messages(data):
   msgs = d[1].splitlines()
   return rules, msgs
 
-def compile_regexp(rules):
+def compile_regexp(rules: Rules) -> Pattern[str]:
   while not rules[0].final():
     for r in rules:
       rules[r].update(rules)
   return re.compile(rules[0].value())
 
-def matchingMessages(data):
+def matchingMessages(data: Tuple[Dict[int, BaseNode], List[str]]) -> int:
   rules, msgs = data
   regexp = compile_regexp(rules)
   return sum(1 for m in msgs if regexp.fullmatch(m))
 
-def matchingMessagesWithLoops(data):
+def matchingMessagesWithLoops(data: Tuple[Dict[int, BaseNode], List[str]]) -> int:
   rules, msgs = data
   for i in range(2, 6):
-    rules[8].alternatives.append([Reference(42)] * i)
+    cast(Or, rules[8]).alternatives.append([Reference(42)] * i)
   for i in range(2, 5):
-    rules[11].alternatives.append([Reference(42)] * i + [Reference(31)] * i)
+    cast(Or, rules[11]).alternatives.append([cast(BaseNode, Reference(42))] * i + [cast(BaseNode, Reference(31))] * i)
   regexp = compile_regexp(rules)
   return sum(1 for m in msgs if regexp.fullmatch(m))
 
-def flip(nr):
+def flip(nr: int) -> int:
   res = 0
   b = 1
   rb = 512
-  for i in range(10):
+  for _ in range(10):
     if nr & b:
       res |= rb
     b <<= 1
@@ -850,65 +881,86 @@ class FlipTest(unittest.TestCase):
 
 
 class Tile(object):
-  def __init__(self, tile):
-    self.tile_id = int(re.match('Tile (\d+):', tile.splitlines()[0]).group(1))
-    binTile = tile.replace('#', '1').replace('.', '0')
+  """Tile represents a single tile.
+
+    edges: [4 edges, 4 flipped edges], each edge is a number represented as binary
+  """
+
+  def __init__(self, tile: str):
+    md = re.match(r'Tile (\d+):', tile.splitlines()[0])
+    assert md
+    self.tile_id: int = int(md.group(1))
+    binTile: str = tile.replace('#', '1').replace('.', '0')
     a = int(binTile.splitlines()[1], 2)
     b = int(''.join(bt[0] for bt in binTile.splitlines()[1:]), 2)
     c = int(binTile.splitlines()[-1], 2)
     d = int(''.join(bt[-1] for bt in binTile.splitlines()[1:]), 2)
 
     # This list includes is *all* possible values - when arranging tiles, note that flip only changes 2 opposite edges
-    self.edges = (a, b, c, d, flip(a), flip(b), flip(c), flip(d))
-    self.tile = tile.splitlines()[1:]
+    self.edges: List[int] = [a, b, c, d, flip(a), flip(b), flip(c), flip(d)]
+    self.rotation: int = 0
+    self.tile: List[str] = tile.splitlines()[1:]
 
-def tiles(data):
-  # return id : [4 edges, 4 flipped edges] - each edge is a number represented as binary
-  tls = {}
+  def currentEdges(self) -> List[int]:
+    if self.rotation < 4:
+      return self.edges[:4][self.rotation:] + self.edges[:4][:self.rotation]
+    else:
+      return self.edges[4:][self.rotation-4:] + self.edges[4:][:self.rotation-4]
+
+ParsedTiles = Dict[int, Tile]
+
+def tiles(data: str) -> ParsedTiles:
+  tls : ParsedTiles = {}
   for tile in data.split('\n\n'):
-    tile_id = int(re.match('Tile (\d+):', tile.splitlines()[0]).group(1))
+    md = re.match(r'Tile (\d+):', tile.splitlines()[0])
+    assert md
+    tile_id = int(md.group(1))
     tls[tile_id] = Tile(tile)
   return tls
 
-def arrangeAndMulCorners(data):
-  return math.prod(findCorners(data))
+def tileIdsPerEdge(tls : Dict[int, Tile]) -> Dict[int, List[int]]:
+  byEdge : Dict[int, List[int]] = {}
+  for id, tile in tls.items():
+    for i in tile.edges:
+      if i not in byEdge:
+        byEdge[i] = []
+      byEdge[i].append(id)
+  return byEdge
 
-def findCorners(data):
-  # returns tile ids for the 4 corners
-  ids = [i for _, t in data.items() for i in list(t.edges)]
-  c = collections.Counter(ids)
-  tile_connections = {}
-  for tid in data:
-    tile_connections[tid] = 0
-    for i in list(data[tid].edges):
-      if c[i] > 1:
-        tile_connections[tid] += 1
-  cs = collections.Counter(tile_connections)
-  return [k for k, _ in cs.most_common()[:-5:-1]]
+def arrangeAndMulCorners(data: ParsedTiles) -> int:
+  corners = findCorners(data)
+  return math.prod(corners)
 
-def createMap(data):
+def findCorners(data: ParsedTiles) -> List[int]:
+  byEdge = tileIdsPerEdge(data)
+  corners: List[int] = []
+  for id, tile in data.items():
+    if len([e for e in tile.edges if len(byEdge[e]) > 1]) == 4:
+      corners.append(id)
+  return corners
+
+def createMap(data: ParsedTiles):
   corners = findCorners(data)
   # fix one corner, then build the map from it:
-  topLeft = corners[0]
+  _topLeft : Tile = data[corners[0]]
   # 144 tiles, so most likely 12x12 map, just in case 144x144
   # need to store the orientation of the tile as well
 
   # find correct orientation for topLeft:
   # orientation is stored as
-  if data[topLeft][0] in data and data[topLeft][1] in data:
+  #if data[topLeft][0] in data and data[topLeft][1] in data:
     # top and left row in map, thus orientation is:
-    []
+   # []
 
-def numMonsters(data):
+def numMonsters(data: ParsedTiles):
   # create inverse map: edge id --> tile
-  edge_to_tile = {}
+  edge_to_tile: Dict[int, List[int]] = {}
   for k, t in data.items():
-    for i in list(t.edges):
+    for i in t.edges:
       if i not in edge_to_tile:
         edge_to_tile[i] = []
       edge_to_tile[i].append(k)
-  print(edge_to_tile)
-  corner = findCorners(data)[0]
+  _corner = findCorners(data)[0]
   return 0
   # ids = [i for _, v in data.items() for i in list(v)]
   # c = collections.Counter(ids)
@@ -921,7 +973,7 @@ def numMonsters(data):
   # cs = collections.Counter(tile_connections)
   # return math.prod(k for k, _ in cs.most_common()[:-5:-1])
 
-Solution = collections.namedtuple('Solution', ['filename', 'parser', 'part1', 'part2'])
+Solution = NamedTuple('Solution', [('filename', str), ('parser', Callable[[str], Any]), ('part1', Callable[[Any], int]), ('part2', Callable[[Any], int])])
 
 solutions = [
   Solution('1.txt', numbers, twoAddTo2020, threeAddTo2020),
@@ -947,7 +999,7 @@ solutions = [
 ]
 
 class Test(unittest.TestCase):
-  def singleSolution(self, s, expected1, expected2):
+  def singleSolution(self, s: Solution, expected1: int, expected2: int):
     self.assertEqual(expected1, s.part1(getInput(s.filename, s.parser)))
     self.assertEqual(expected2, s.part2(getInput(s.filename, s.parser)))
 
@@ -971,7 +1023,7 @@ class Test(unittest.TestCase):
     self.singleSolution(solutions[16], 284, 2240)
     self.singleSolution(solutions[17], 29839238838303, 201376568795521)
     self.singleSolution(solutions[18], 142, 294)
-    self.singleSolution(solutions[19], 5775714912743, '?')
+    self.singleSolution(solutions[19], 5775714912743, UNKNOWN)
 
   def testExamples(self):
     self.assertEqual(4, whereCanTheBagBe(getInput('7a.txt', bags)))
@@ -1032,7 +1084,7 @@ class Test(unittest.TestCase):
     self.assertEqual([(44, 5)], boardingPasses('FBFBBFFRLR'))
 
 for i in range(len(solutions)):
-  s = solutions[i]
+  s: Solution = solutions[i]
   print('Day %d:' % (i+1),
       s.part1(getInput(s.filename, s.parser)),
       s.part2(getInput(s.filename, s.parser)))

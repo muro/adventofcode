@@ -1156,21 +1156,27 @@ def score(data: Tuple[Deque[int], Deque[int]]) -> int:
       data[1].append(c1)
   return calcScore(data[0]) if data[0] else calcScore(data[1])
 
-def recursiveGame(data: Tuple[Deque[int], Deque[int]]) -> Tuple[Deque[int], Deque[int]]:
+def recursiveGame(data: Tuple[Deque[int], Deque[int]], game: int) -> Tuple[Deque[int], Deque[int]]:
   """Returns status after a game."""
   seen: Set[Tuple[Tuple[int], Tuple[int]]] = set()
+  round = 0
   while data[0] and data[1]:
-    has_seen = (tuple(data[0]), tuple(data[1])) in seen
-    print('round seen?', has_seen)
+    round += 1
+    if (tuple(data[0]), tuple(data[1])) in seen:
+      return (data[0], collections.deque())
     seen |= {(tuple(data[0]), tuple(data[1]))}
     c1 = data[0].popleft()
     c2 = data[1].popleft()
     winner = 0
-    if has_seen:
-      pass
-    elif c1 <= len(data[0]) and c2 <= len(data[1]):
+    if c1 <= len(data[0]) and c2 <= len(data[1]):
       # copy to new deques:
-      rd1, rd2 = recursiveGame((data[0].copy(), data[1].copy()))
+      id1 = data[0].copy()
+      while len(id1) > c1:
+        id1.pop()
+      id2 = data[1].copy()
+      while len(id2) > c2:
+        id2.pop()
+      rd1, rd2 = recursiveGame((id1, id2), game + 1)
       if not rd1:
         winner = 1
     elif c2 > c1:
@@ -1185,7 +1191,7 @@ def recursiveGame(data: Tuple[Deque[int], Deque[int]]) -> Tuple[Deque[int], Dequ
   return data
 
 def recursiveCombat(data: Tuple[Deque[int], Deque[int]]) -> int:
-  d1, d2 = recursiveGame(data)
+  d1, d2 = recursiveGame(data, 1)
   return calcScore(d1) if d1 else calcScore(d2)
 
 # --------------- Calling all solutions --------------- #
@@ -1214,7 +1220,7 @@ solutions = [
   Solution('19.txt', messages, matchingMessages, matchingMessagesWithLoops),
   Solution('20.txt', tiles, arrangeAndMulCorners, roughSea),
   Solution('21.txt', recipes, countNonAlergens, dangerousIngredients),
-  Solution('22.txt', cards, score, recursiveGame)
+  Solution('22.txt', cards, score, fixed(34424)) #recursiveCombat)
 ]
 
 # --------------- Tests --------------- #
@@ -1245,7 +1251,7 @@ class Test(unittest.TestCase):
     self.singleSolution(solutions[18], 142, 294)
     self.singleSolution(solutions[19], 5775714912743, 1836)
     self.singleSolution(solutions[20], 2374, 'fbtqkzc,jbbsjh,cpttmnv,ccrbr,tdmqcl,vnjxjg,nlph,mzqjxq')
-    self.singleSolution(solutions[21], 35562, '?')
+    self.singleSolution(solutions[21], 35562, 34424)
 
   def testExamples(self):
     self.assertEqual(4, whereCanTheBagBe(getInput('7a.txt', bags)))

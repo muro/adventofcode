@@ -1267,7 +1267,7 @@ def crabCupsMul(data: List[int]) -> int:
   data = data + list(range(mx + 1, 1000 * 1000 + 1))
   return crabCup(data, 10 * 1000 * 1000, mulAfter1)
 
-# --------------- 23 --------------- #
+# --------------- 24 --------------- #
 Hex = Tuple[int, int]
 HexPath = List[Hex]
 
@@ -1331,6 +1331,10 @@ def hexLife100(data: List[HexPath]) -> int:
   for i in range(100):
     start = live(start, i)
   return len(start)
+
+# --------------- 25 --------------- #
+def encryptionKey(data: List[int]) -> int:
+  return 1
 
 # --------------- Unit tests -------------------------- #
 class UnitTest(unittest.TestCase):
@@ -1397,6 +1401,7 @@ class UnitTest(unittest.TestCase):
     # self.assertEqual(149245887792, crabCupsMul([3, 8, 9, 1, 2, 5, 4, 6, 7]))
     self.assertEqual(10, countFlips(getInput('24a.txt', hexPaths)))
     self.assertEqual(2208, hexLife100(getInput('24a.txt', hexPaths)))
+    self.assertEqual(14897079, encryptionKey([5764801, 17807724]))
 
   def testBp(self):
     self.assertEqual([(44, 5)], boardingPasses('FBFBBFFRLR'))
@@ -1430,6 +1435,7 @@ solutions = [
   Solution('22.txt', cards, score, fixed(34424)), #recursiveCombat)
   Solution('23.txt', numbers, crabCups, fixed(294320513093)), #crabCupsMul)
   Solution('24.txt', hexPaths, countFlips, hexLife100),
+  Solution('25.txt', numbers, encryptionKey, noop),
 ]
 
 # --------------- Tests --------------- #
@@ -1464,6 +1470,7 @@ class SolutionTest(unittest.TestCase):
     self.singleSolution(solutions[21], 35562, 34424)
     self.singleSolution(solutions[22], 98742365, 294320513093)
     self.singleSolution(solutions[23], 459, 4150)
+    self.singleSolution(solutions[24], UNKNOWN, UNKNOWN)
 
 unittest.main()
 

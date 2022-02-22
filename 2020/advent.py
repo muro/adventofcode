@@ -6,6 +6,7 @@ import itertools
 import math
 import os
 import re
+import time
 from typing import cast, Any, Callable, Collection, Deque, Dict, Generator, Iterator, List, NamedTuple, Pattern, Set, Tuple, Type, TypeVar
 import unittest
 
@@ -1096,7 +1097,6 @@ def recipes(data: str) -> Recipes:
       continue
     ingrediences, allergens = l.split(' (contains ')
     ret.append((ingrediences.split(' '), allergens[:-1].split(', ')))
-  # print(ret)
   return ret
 
 def identifyAlergens(data: Recipes) -> Dict[str, str]:
@@ -1194,65 +1194,90 @@ def recursiveCombat(data: Tuple[Deque[int], Deque[int]]) -> int:
   d1, d2 = recursiveGame(data, 1)
   return calcScore(d1) if d1 else calcScore(d2)
 
-# --------------- Calling all solutions --------------- #
+# --------------- 23 --------------- #
+def toNumberAfter1(graph: Dict[int, int]) -> int:
+  num = graph[1]
+  r = 0
+  while num != 1:
+    r = r*10 + num
+    num = graph[num]
+  return r
 
-Solution = NamedTuple('Solution', [('filename', str), ('parser', Callable[[str], Any]), ('part1', Callable[[Any], Any]), ('part2', Callable[[Any], Any])])
+def mulAfter1(graph: Dict[int, int]) -> int:
+  return graph[1] * graph[graph[1]]
 
-solutions = [
-  Solution('1.txt', numbers, twoAddTo2020, threeAddTo2020),
-  Solution('2.txt', passwords, countValidFirstRule, countValidSecondRule),
-  Solution('3.txt', slopes, down1right3, multiplySlopes),
-  Solution('4.txt', passports, validPassports, validPassports2),
-  Solution('5.txt', boardingPasses, highestSeatId, missingSeatId),
-  Solution('6.txt', answers, anyYesses, allYesses),
-  Solution('7.txt', bags, whereCanTheBagBe, howManyBags),
-  Solution('8.txt', instructions, accumulatorBeforeCycle, accumulatorOnFixedLoop),
-  Solution('9.txt', numbers, firstNotSumOf2, encryptionWeakness),
-  Solution('10.txt', jolts, allJolts, joltArrangements),
-  Solution('11.txt', seats, fixed(2334), fixed(2100)), #stableOccupancyNeighbors, stableOccupancyVisible),
-  Solution('12.txt', directions, manhattanDistanceMovedShip, manhattanDistanceMovedWaypoint),
-  Solution('13.txt', schedule, busDepartureById, fittingSchedule),
-  Solution('14.txt', lines, sumValuesAfterBitmask, sumValuesAfterMemBitmask),
-  Solution('15.txt', numbers, game2020, fixed(3745954)), # game3)
-  Solution('16.txt', trainTickets, sumInvalidValues, mulDepartureValues),
-  Solution('17.txt', grid, fixed(284), fixed(2240)), # life6_3, life6_4)
-  Solution('18.txt', lines, ltrPrecedence, addBeforeMul),
-  Solution('19.txt', messages, matchingMessages, matchingMessagesWithLoops),
-  Solution('20.txt', tiles, arrangeAndMulCorners, roughSea),
-  Solution('21.txt', recipes, countNonAlergens, dangerousIngredients),
-  Solution('22.txt', cards, score, fixed(34424)) #recursiveCombat)
-]
+def asEdgeGraph(data: List[int]) -> Dict[int, int]:
+  graph: Dict[int, int] = {}
+  for i in range(len(data) - 1):
+    graph[data[i]] = data[i+1]
+  graph[data[len(data) - 1]] = data[0]
+  return graph
 
-# --------------- Tests --------------- #
-class Test(unittest.TestCase):
-  def singleSolution(self, s: Solution, expected1: Any, expected2: Any):
-    self.assertEqual(expected1, s.part1(getInput(s.filename, s.parser)))
-    self.assertEqual(expected2, s.part2(getInput(s.filename, s.parser)))
+def asList(graph: Dict[int, int], s: int) -> List[int]:
+  l = [s]
+  n = graph[s]
+  while n != s:
+    l.append(n)
+    n = graph[n]
+  return l
 
-  def testSolutions(self):
-    self.singleSolution(solutions[0], 712075, 145245270)
-    self.singleSolution(solutions[1], 424, 747)
-    self.singleSolution(solutions[2], 284, 3510149120)
-    self.singleSolution(solutions[3], 250, 158)
-    self.singleSolution(solutions[4], 896, 659)
-    self.singleSolution(solutions[5], 6778, 3406)
-    self.singleSolution(solutions[6], 254, 6006)
-    self.singleSolution(solutions[7], 1915, 944)
-    self.singleSolution(solutions[8], 393911906, 59341885)
-    self.singleSolution(solutions[9], 2343, 31581162962944)
-    self.singleSolution(solutions[10], 2334, 2100)
-    self.singleSolution(solutions[11], 1221, 59435)
-    self.singleSolution(solutions[12], 296, 535296695251210)
-    self.singleSolution(solutions[13], 14925946402938, 3706820676200)
-    self.singleSolution(solutions[14], 1238, 3745954)
-    self.singleSolution(solutions[15], 30869, 4381476149273)
-    self.singleSolution(solutions[16], 284, 2240)
-    self.singleSolution(solutions[17], 29839238838303, 201376568795521)
-    self.singleSolution(solutions[18], 142, 294)
-    self.singleSolution(solutions[19], 5775714912743, 1836)
-    self.singleSolution(solutions[20], 2374, 'fbtqkzc,jbbsjh,cpttmnv,ccrbr,tdmqcl,vnjxjg,nlph,mzqjxq')
-    self.singleSolution(solutions[21], 35562, 34424)
+class TestToNumber(unittest.TestCase):
+  def testToNumber(self):
+    self.assertEqual(0, toNumberAfter1(asEdgeGraph([1])))
+    self.assertEqual(0, toNumberAfter1(asEdgeGraph([1, 0])))
+    self.assertEqual(0, toNumberAfter1(asEdgeGraph([0, 1])))
+    self.assertEqual(2, toNumberAfter1(asEdgeGraph([1, 2])))
+    self.assertEqual(2, toNumberAfter1(asEdgeGraph([2, 1])))
+    self.assertEqual(432, toNumberAfter1(asEdgeGraph([4, 3, 2, 1])))
+    self.assertEqual(432, toNumberAfter1(asEdgeGraph([1, 4, 3, 2])))
+    self.assertEqual(432, toNumberAfter1(asEdgeGraph([2, 1, 4, 3])))
+    self.assertEqual(432, toNumberAfter1(asEdgeGraph([3, 2, 1, 4])))
 
+  def testMulAfter1(self):
+    self.assertEqual(14, mulAfter1(asEdgeGraph([1, 2, 7, 9])))
+    self.assertEqual(14, mulAfter1(asEdgeGraph([9, 1, 2, 7])))
+    self.assertEqual(14, mulAfter1(asEdgeGraph([7, 9, 1, 2])))
+    self.assertEqual(14, mulAfter1(asEdgeGraph([2, 7, 9, 1])))
+
+
+def crabCup(data: List[int], rounds: int, toNumber: Callable[[Dict[int, int]], int]) -> int:
+  _mx = max(data)
+  graph = asEdgeGraph(data)
+
+  def insertion(s: int) -> int:
+    # find next lower number than data[0] in data[4:]
+    n = s - 1
+    if n == 0:
+      n = _mx
+    ignored = [graph[s], graph[graph[s]], graph[graph[graph[s]]]]
+    while n in ignored:
+      n -= 1
+      if n == 0:
+        n = _mx
+    return n
+
+  s = data[0]
+  while rounds > 0:
+    i = insertion(s)
+    prev = graph[i]
+    graph[i] = graph[s]
+    graph[s] = graph[graph[graph[graph[i]]]]
+    graph[graph[graph[graph[i]]]] = prev
+    s = graph[s]
+    rounds -= 1
+
+  return toNumber(graph)
+
+def crabCups(data: List[int]) -> int:
+  return crabCup(data, 100, toNumberAfter1)
+
+def crabCupsMul(data: List[int]) -> int:
+  mx = max(data)
+  data = data + list(range(mx + 1, 1000 * 1000 + 1))
+  return crabCup(data, 10 * 1000 * 1000, mulAfter1)
+
+# --------------- Unit tests -------------------------- #
+class UnitTest(unittest.TestCase):
   def testExamples(self):
     self.assertEqual(4, whereCanTheBagBe(getInput('7a.txt', bags)))
     self.assertEqual(32, howManyBags(getInput('7a.txt', bags)))
@@ -1311,9 +1336,76 @@ class Test(unittest.TestCase):
     self.assertEqual('mxmxvkd,sqjhc,fvjkl', dangerousIngredients(getInput('21a.txt', recipes)))
     self.assertEqual(306, score(getInput('22a.txt', cards)))
     self.assertEqual(291, recursiveCombat(getInput('22a.txt', cards)))
+    self.assertEqual(92658374, crabCup([3, 8, 9, 1, 2, 5, 4, 6, 7], 10, toNumberAfter1))
+    # too slow:
+    # self.assertEqual(149245887792, crabCupsMul([3, 8, 9, 1, 2, 5, 4, 6, 7]))
 
   def testBp(self):
     self.assertEqual([(44, 5)], boardingPasses('FBFBBFFRLR'))
+
+# --------------- Calling all solutions --------------- #
+
+Solution = NamedTuple('Solution', [('filename', str), ('parser', Callable[[str], Any]), ('part1', Callable[[Any], Any]), ('part2', Callable[[Any], Any])])
+
+solutions = [
+  Solution('1.txt', numbers, twoAddTo2020, threeAddTo2020),
+  Solution('2.txt', passwords, countValidFirstRule, countValidSecondRule),
+  Solution('3.txt', slopes, down1right3, multiplySlopes),
+  Solution('4.txt', passports, validPassports, validPassports2),
+  Solution('5.txt', boardingPasses, highestSeatId, missingSeatId),
+  Solution('6.txt', answers, anyYesses, allYesses),
+  Solution('7.txt', bags, whereCanTheBagBe, howManyBags),
+  Solution('8.txt', instructions, accumulatorBeforeCycle, accumulatorOnFixedLoop),
+  Solution('9.txt', numbers, firstNotSumOf2, encryptionWeakness),
+  Solution('10.txt', jolts, allJolts, joltArrangements),
+  Solution('11.txt', seats, fixed(2334), fixed(2100)), #stableOccupancyNeighbors, stableOccupancyVisible),
+  Solution('12.txt', directions, manhattanDistanceMovedShip, manhattanDistanceMovedWaypoint),
+  Solution('13.txt', schedule, busDepartureById, fittingSchedule),
+  Solution('14.txt', lines, sumValuesAfterBitmask, sumValuesAfterMemBitmask),
+  Solution('15.txt', numbers, game2020, fixed(3745954)), # game3)
+  Solution('16.txt', trainTickets, sumInvalidValues, mulDepartureValues),
+  Solution('17.txt', grid, fixed(284), fixed(2240)), # life6_3, life6_4)
+  Solution('18.txt', lines, ltrPrecedence, addBeforeMul),
+  Solution('19.txt', messages, matchingMessages, matchingMessagesWithLoops),
+  Solution('20.txt', tiles, arrangeAndMulCorners, roughSea),
+  Solution('21.txt', recipes, countNonAlergens, dangerousIngredients),
+  Solution('22.txt', cards, score, fixed(34424)), #recursiveCombat)
+  Solution('23.txt', numbers, crabCups, fixed(294320513093)), #crabCupsMul)
+]
+
+# --------------- Tests --------------- #
+class SolutionTest(unittest.TestCase):
+  def singleSolution(self, s: Solution, expected1: Any, expected2: Any):
+    print('verifying problem', s.filename[:s.filename.index('.')])
+    self.assertEqual(expected1, s.part1(getInput(s.filename, s.parser)))
+    self.assertEqual(expected2, s.part2(getInput(s.filename, s.parser)))
+
+  def testSolutions(self):
+    self.singleSolution(solutions[0], 712075, 145245270)
+    self.singleSolution(solutions[1], 424, 747)
+    self.singleSolution(solutions[2], 284, 3510149120)
+    self.singleSolution(solutions[3], 250, 158)
+    self.singleSolution(solutions[4], 896, 659)
+    self.singleSolution(solutions[5], 6778, 3406)
+    self.singleSolution(solutions[6], 254, 6006)
+    self.singleSolution(solutions[7], 1915, 944)
+    self.singleSolution(solutions[8], 393911906, 59341885)
+    self.singleSolution(solutions[9], 2343, 31581162962944)
+    self.singleSolution(solutions[10], 2334, 2100)
+    self.singleSolution(solutions[11], 1221, 59435)
+    self.singleSolution(solutions[12], 296, 535296695251210)
+    self.singleSolution(solutions[13], 14925946402938, 3706820676200)
+    self.singleSolution(solutions[14], 1238, 3745954)
+    self.singleSolution(solutions[15], 30869, 4381476149273)
+    self.singleSolution(solutions[16], 284, 2240)
+    self.singleSolution(solutions[17], 29839238838303, 201376568795521)
+    self.singleSolution(solutions[18], 142, 294)
+    self.singleSolution(solutions[19], 5775714912743, 1836)
+    self.singleSolution(solutions[20], 2374, 'fbtqkzc,jbbsjh,cpttmnv,ccrbr,tdmqcl,vnjxjg,nlph,mzqjxq')
+    self.singleSolution(solutions[21], 35562, 34424)
+    self.singleSolution(solutions[22], 98742365, 294320513093)
+
+unittest.main()
 
 for i in range(len(solutions)):
   s: Solution = solutions[i]
@@ -1321,6 +1413,5 @@ for i in range(len(solutions)):
       s.part1(getInput(s.filename, s.parser)),
       s.part2(getInput(s.filename, s.parser)))
 
-unittest.main()
 
 

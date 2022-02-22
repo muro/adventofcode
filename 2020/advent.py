@@ -6,7 +6,6 @@ import itertools
 import math
 import os
 import re
-import time
 from typing import cast, Any, Callable, Collection, Deque, Dict, Generator, Iterator, List, NamedTuple, Pattern, Set, Tuple, Type, TypeVar
 import unittest
 
@@ -1176,7 +1175,7 @@ def recursiveGame(data: Tuple[Deque[int], Deque[int]], game: int) -> Tuple[Deque
       id2 = data[1].copy()
       while len(id2) > c2:
         id2.pop()
-      rd1, rd2 = recursiveGame((id1, id2), game + 1)
+      rd1, _rd2 = recursiveGame((id1, id2), game + 1)
       if not rd1:
         winner = 1
     elif c2 > c1:
@@ -1212,14 +1211,6 @@ def asEdgeGraph(data: List[int]) -> Dict[int, int]:
     graph[data[i]] = data[i+1]
   graph[data[len(data) - 1]] = data[0]
   return graph
-
-def asList(graph: Dict[int, int], s: int) -> List[int]:
-  l = [s]
-  n = graph[s]
-  while n != s:
-    l.append(n)
-    n = graph[n]
-  return l
 
 class TestToNumber(unittest.TestCase):
   def testToNumber(self):
@@ -1275,6 +1266,71 @@ def crabCupsMul(data: List[int]) -> int:
   mx = max(data)
   data = data + list(range(mx + 1, 1000 * 1000 + 1))
   return crabCup(data, 10 * 1000 * 1000, mulAfter1)
+
+# --------------- 23 --------------- #
+Hex = Tuple[int, int]
+HexPath = List[Hex]
+
+def hexPaths(data: str) -> List[HexPath]:
+  paths: List[HexPath] = []
+  for l in data.splitlines():
+    path: HexPath = []
+    pc = ''
+    for c in l:
+      if pc == 'n' and c == 'e':
+        pc = ''
+        path.append((-1, 1))
+      elif pc == '' and c == 'e':
+        path.append((0, 2))
+      elif pc == 's' and c == 'e':
+        pc = ''
+        path.append((1, 1))
+      elif pc == 's' and c == 'w':
+        pc = ''
+        path.append((1, -1))
+      elif pc == '' and c == 'w':
+        path.append((0, -2))
+      elif pc == 'n' and c == 'w':
+        pc = ''
+        path.append((-1, -1))
+      else:
+        pc = c
+    paths.append(path)
+  return paths
+
+def applyPath(data: List[HexPath]) -> Set[Hex]:
+  flipped: Set[Hex] = set()
+  for path in data:
+    point: Hex = (0, 0)
+    for move in path:
+      point = (point[0] + move[0], point[1] + move[1])
+    if point in flipped:
+      flipped.remove(point)
+    else:
+      flipped.add(point)
+  return flipped
+
+def countFlips(data: List[HexPath]) -> int:
+  return len(applyPath(data))
+
+def live(before: Set[Hex], i : int) -> Set[Hex]:
+  neighbors = [(-1, 1), (0, 2), (1, 1), (1, -1), (0, -2), (-1, -1)]
+  d: Dict[Hex, int] = collections.defaultdict(int)
+  for h in before:
+    for nb in neighbors:
+      d[(h[0] + nb[0], h[1] + nb[1])] += 1
+
+  # copy over black tiles with 1 or 2 neighbors:
+  after: Set[Hex] = {h for h in before if d[h] == 1 or d[h] == 2}
+  # add all white tiles with 2 black neighbors
+  after |= {h for h in d if h not in before and d[h] == 2}
+  return after
+
+def hexLife100(data: List[HexPath]) -> int:
+  start = applyPath(data)
+  for i in range(100):
+    start = live(start, i)
+  return len(start)
 
 # --------------- Unit tests -------------------------- #
 class UnitTest(unittest.TestCase):
@@ -1339,6 +1395,8 @@ class UnitTest(unittest.TestCase):
     self.assertEqual(92658374, crabCup([3, 8, 9, 1, 2, 5, 4, 6, 7], 10, toNumberAfter1))
     # too slow:
     # self.assertEqual(149245887792, crabCupsMul([3, 8, 9, 1, 2, 5, 4, 6, 7]))
+    self.assertEqual(10, countFlips(getInput('24a.txt', hexPaths)))
+    self.assertEqual(2208, hexLife100(getInput('24a.txt', hexPaths)))
 
   def testBp(self):
     self.assertEqual([(44, 5)], boardingPasses('FBFBBFFRLR'))
@@ -1371,6 +1429,7 @@ solutions = [
   Solution('21.txt', recipes, countNonAlergens, dangerousIngredients),
   Solution('22.txt', cards, score, fixed(34424)), #recursiveCombat)
   Solution('23.txt', numbers, crabCups, fixed(294320513093)), #crabCupsMul)
+  Solution('24.txt', hexPaths, countFlips, hexLife100),
 ]
 
 # --------------- Tests --------------- #
@@ -1404,6 +1463,7 @@ class SolutionTest(unittest.TestCase):
     self.singleSolution(solutions[20], 2374, 'fbtqkzc,jbbsjh,cpttmnv,ccrbr,tdmqcl,vnjxjg,nlph,mzqjxq')
     self.singleSolution(solutions[21], 35562, 34424)
     self.singleSolution(solutions[22], 98742365, 294320513093)
+    self.singleSolution(solutions[23], 459, 4150)
 
 unittest.main()
 

@@ -1333,8 +1333,28 @@ def hexLife100(data: List[HexPath]) -> int:
   return len(start)
 
 # --------------- 25 --------------- #
+def findCycleLen(i: int, key: int) -> int:
+  n = i
+  cycle = 1
+  while n != key:
+    n = n * i % 20201227
+    cycle += 1
+  return cycle
+
+def applyCycles(i: int, cycles: int) -> int:
+  n = 1
+  while cycles:
+    n = n * i % 20201227
+    cycles -= 1
+  return n
+
+
 def encryptionKey(data: List[int]) -> int:
-  return 1
+  cardPk, doorPk = data
+  doorCycle = findCycleLen(7, doorPk)
+  cardCycle = findCycleLen(7, cardPk)
+  assert applyCycles(doorPk, cardCycle) == applyCycles(cardPk, doorCycle)
+  return applyCycles(doorPk, cardCycle)
 
 # --------------- Unit tests -------------------------- #
 class UnitTest(unittest.TestCase):
@@ -1470,7 +1490,7 @@ class SolutionTest(unittest.TestCase):
     self.singleSolution(solutions[21], 35562, 34424)
     self.singleSolution(solutions[22], 98742365, 294320513093)
     self.singleSolution(solutions[23], 459, 4150)
-    self.singleSolution(solutions[24], UNKNOWN, UNKNOWN)
+    self.singleSolution(solutions[24], 4441893, UNKNOWN)
 
 unittest.main()
 

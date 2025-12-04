@@ -42,15 +42,6 @@ def count_rot(n: int, r: int) -> Tuple[int, int]:
   return (n, count)
 
 def passing_zeros(rotations: List[int]) -> int:
-  acc = itertools.accumulate([50] + rotations)
-  z = zip(acc, acc[1:])
-  
-  count = 0
-  for p, n in z:
-    if n % 100 == 0:
-      count += 1
-
-
   n = 50
   count = 0
   for r in rotations:

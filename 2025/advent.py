@@ -52,6 +52,47 @@ def passing_zeros(rotations: List[int]) -> int:
 def noop(data: Any) -> Any:
   return None
 
+def is_invalid(n: int) -> bool:
+  s = str(n)
+  l = len(s)
+  for i in range(1, (l // 2) + 1):
+    d = l // i
+    if s[:i] * d == s:
+      return True
+  return False
+
+def twice(n: int) -> int:
+  return int(str(n) + str(n)) if n > 0 else 0
+
+def half(n: int) -> int:
+  """Returns largest half-number of the format 123 where 123123 is a twice repeating number smaller or equal to n."""
+  if n <= 10:
+    return 0
+  
+  d = len(str(n))
+  if d % 2 != 0:
+    return int("9" * (d // 2))
+  
+  # take first half of the digits and duplicate:
+  h = int(str(n)[:d//2])
+  return h if twice(h) <= n else h -1
+
+def ranges(data: str) -> List[Tuple[int, int]]:
+  return [tuple(map(int, s.split("-"))) for s in data.split(",")]
+
+def invalid_nrs(start, end):
+  return [twice(i) for i in range(half(start), half(end)+1) if start <= twice(i) and twice(i) <= end]
+
+def sum_invalids(lst: List[Tuple[int, int]]) -> int:
+  return sum(sum(invalid_nrs(*p)) for p in lst)
+
+def invalid2_nrs(start, end):
+  return [i for i in range(start, end+1) if is_invalid(i)]
+
+def sum_invalids2(lst: List[Tuple[int, int]]) -> int:
+  return sum(sum(invalid2_nrs(*p)) for p in lst)
+
+
 Solution = NamedTuple('Solution', [
    ('filename', str),
    ('parser', Callable[[str], Any]),
@@ -59,7 +100,8 @@ Solution = NamedTuple('Solution', [
    ('part2', Callable[[Any], Any])])
 
 solutions = [
-   Solution('1.txt', rotations, landing_zeros, passing_zeros)
+   Solution('1.txt', rotations, landing_zeros, passing_zeros),
+   Solution('2.txt', ranges, sum_invalids, sum_invalids2)
 ]
 
 def solve(s: Solution) -> Tuple[Any, Any]:
@@ -92,6 +134,28 @@ class SolutionTest(unittest.TestCase):
 
     self.assertEqual(6, check2(example))
     self.assertEqual((1132, 6623), solve(solutions[0]))
+
+  def testProblem2(self):
+    self.assertEqual(1, half(11))
+    for i in range(11, 22):
+      self.assertEqual(1, half(i))
+    for i in range(100, 1010):
+      self.assertEqual(9, half(i), f"twice for {i} should be 99")
+    self.assertEqual([(1, 2), (22, 33)], ranges("1-2,22-33"))
+    check: Callable[str, int] = lambda s: sum_invalids(ranges(s))
+    check2: Callable[[str], int] = lambda s: sum_invalids2(ranges(s))
+    self.assertEqual(11+22+33, check("1-43,100-1000"))
+    self.assertEqual(11+22+33+1010+1111, check("1-43,100-1000,1000-1211"))
+    example = "11-22,95-115,998-1012,1188511880-1188511890,222220-222224,1698522-1698528,446443-446449,38593856-38593862,565653-565659,824824821-824824827,2121212118-2121212124"
+    self.assertEqual(1227775554, check(example))
+    self.assertEqual(4174379265, check2(example))
+
+    self.assertTrue(is_invalid(11))
+    self.assertTrue(is_invalid(22))
+    self.assertTrue(is_invalid(111))
+    self.assertFalse(is_invalid(12))
+    self.assertEqual((54641809925, 73694270688), solve(solutions[1]))
+    
 
 unittest.main()
 

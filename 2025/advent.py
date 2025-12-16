@@ -92,6 +92,20 @@ def invalid2_nrs(start, end):
 def sum_invalids2(lst: List[Tuple[int, int]]) -> int:
   return sum(sum(invalid2_nrs(*p)) for p in lst)
 
+def jolts(s: str, i: int) -> int:
+  return 10 ** i * int(max(s[:-i])) + jolts(s[1 + s.index(max(s[:-i])):], i - 1) if i > 0 else int(max(s))
+
+def sum_jolts(d: List[str], i: int) -> int:
+  return sum(jolts(s, i) for s in d)
+
+sum_jolts_2 = lambda d: sum_jolts(d, 1)
+sum_jolts_12 = lambda d: sum_jolts(d, 11)
+
+def sum_jolts(d: List[str], i: int) -> int:
+  return sum(jolts(s, i) for s in d)
+
+def lines(data: str) -> List[str]:
+  return data.splitlines()
 
 Solution = NamedTuple('Solution', [
    ('filename', str),
@@ -101,7 +115,8 @@ Solution = NamedTuple('Solution', [
 
 solutions = [
    Solution('1.txt', rotations, landing_zeros, passing_zeros),
-   Solution('2.txt', ranges, sum_invalids, sum_invalids2)
+   Solution('2.txt', ranges, sum_invalids, sum_invalids2),
+   Solution('3.txt', lines, sum_jolts_2, sum_jolts_12)
 ]
 
 def solve(s: Solution) -> Tuple[Any, Any]:
@@ -155,6 +170,20 @@ class SolutionTest(unittest.TestCase):
     self.assertTrue(is_invalid(111))
     self.assertFalse(is_invalid(12))
     self.assertEqual((54641809925, 73694270688), solve(solutions[1]))
+
+  def testProblem3(self):
+    self.assertEqual(98, jolts("987654321111111", 1))
+    self.assertEqual(987654321111, jolts("987654321111111", 11))
+    self.assertEqual(89, jolts("811111111111119", 1))
+    self.assertEqual(811111111119, jolts("811111111111119", 11))
+    self.assertEqual(78, jolts("234234234234278", 1))
+    self.assertEqual(434234234278, jolts("234234234234278", 11))
+    self.assertEqual(92, jolts("818181911112111", 1))
+    self.assertEqual(888911112111, jolts("818181911112111", 11))
+    example = ["987654321111111", "811111111111119", "234234234234278", "818181911112111"]
+    self.assertEqual(357, sum_jolts_2(example))
+    self.assertEqual(3121910778619, sum_jolts_12(example))
+    self.assertEqual((17554, 175053592950232), solve(solutions[2]))
     
 
 unittest.main()
